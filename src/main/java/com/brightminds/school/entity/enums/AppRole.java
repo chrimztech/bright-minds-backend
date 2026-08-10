@@ -1,0 +1,7 @@
+package com.brightminds.school.entity.enums;
+
+public enum AppRole {
+    SUPER_ADMIN, HEAD_TEACHER, DEPUTY_HEAD, ADMIN, ACCOUNTANT,
+    TEACHER, CLASS_TEACHER, PARENT, LIBRARIAN, STORE_OFFICER,
+    TRANSPORT_OFFICER, NURSE, SECURITY
+}

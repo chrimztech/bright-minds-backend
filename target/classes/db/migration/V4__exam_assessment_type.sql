@@ -1,0 +1,1 @@
+ALTER TABLE exams ADD COLUMN IF NOT EXISTS assessment_type VARCHAR(30);
