@@ -1,0 +1,1 @@
+ALTER TABLE invoices ADD COLUMN fee_item_id UUID REFERENCES fee_items(id) ON DELETE SET NULL;

@@ -31,6 +31,7 @@ public class PupilService {
     private final SchoolClassRepository classRepo;
     private final AcademicYearRepository yearRepo;
     private final PupilEnrollmentRepository enrollmentRepo;
+    private final FeeAutoBillingService feeAutoBillingService;
 
     @Transactional(readOnly = true)
     public List<Pupil> getAll() {
@@ -63,7 +64,10 @@ public class PupilService {
         req.setAdmissionNo(admissionNo);
         Pupil pupil = mapToEntity(req, new Pupil());
         Pupil saved = pupilRepo.save(pupil);
-        if (saved.getSchoolClass() != null) createEnrollment(saved, saved.getAdmittedOn());
+        if (saved.getSchoolClass() != null) {
+            createEnrollment(saved, saved.getAdmittedOn());
+            feeAutoBillingService.billRecurringFeesForClass(saved);
+        }
         return saved;
     }
 
@@ -83,9 +87,12 @@ public class PupilService {
         mapToEntity(req, pupil);
         Pupil saved = pupilRepo.save(pupil);
         UUID currentClassId = saved.getSchoolClass() != null ? saved.getSchoolClass().getId() : null;
-        if (!Objects.equals(previousClassId, currentClassId) && saved.getSchoolClass() != null) {
+        if (!Objects.equals(previousClassId, currentClassId)) {
             closeEnrollment(saved, LocalDate.now());
-            createEnrollment(saved, LocalDate.now());
+            if (saved.getSchoolClass() != null) {
+                createEnrollment(saved, LocalDate.now());
+                feeAutoBillingService.billRecurringFeesForClass(saved);
+            }
         }
         return saved;
     }
@@ -100,41 +107,44 @@ public class PupilService {
         return pupilRepo.findBySchoolClassId(classId);
     }
 
+    // Only overwrites a field when the request actually carries a value, so callers that
+    // submit a partial payload (e.g. the class-roster quick add/remove) don't silently
+    // wipe out fields their form doesn't know about. classId is the exception: it is
+    // always authoritative, since null there deliberately means "unassign from class".
     private Pupil mapToEntity(PupilRequest req, Pupil p) {
         p.setFullName(req.getFullName());
-        p.setAdmissionNo(req.getAdmissionNo());
-        p.setGender(req.getGender());
-        p.setDob(req.getDob());
-        p.setAddress(req.getAddress());
-        p.setTown(req.getTown());
-        p.setProvince(req.getProvince());
-        p.setPostalCode(req.getPostalCode());
-        p.setNationality(req.getNationality());
-        p.setTribe(req.getTribe());
-        p.setReligion(req.getReligion());
-        p.setHomeLanguage(req.getHomeLanguage());
-        p.setBloodGroup(req.getBloodGroup());
-        p.setAllergies(req.getAllergies());
-        p.setMedicalInfo(req.getMedicalInfo());
-        p.setSpecialNeeds(req.getSpecialNeeds());
-        p.setNrcNo(req.getNrcNo());
-        p.setBirthCertNo(req.getBirthCertNo());
-        p.setPreviousSchool(req.getPreviousSchool());
-        p.setReferralSource(req.getReferralSource());
-        p.setSiblingsInSchool(req.getSiblingsInSchool());
-        p.setHouse(req.getHouse());
-        p.setBoardingStatus(req.getBoardingStatus());
-        p.setTransportMode(req.getTransportMode());
-        p.setEmergencyContact(req.getEmergencyContact());
-        p.setPhotoUrl(req.getPhotoUrl());
-        p.setNotes(req.getNotes());
+        if (req.getAdmissionNo() != null) p.setAdmissionNo(req.getAdmissionNo());
+        if (req.getGender() != null) p.setGender(req.getGender());
+        if (req.getDob() != null) p.setDob(req.getDob());
+        if (req.getAddress() != null) p.setAddress(req.getAddress());
+        if (req.getTown() != null) p.setTown(req.getTown());
+        if (req.getProvince() != null) p.setProvince(req.getProvince());
+        if (req.getPostalCode() != null) p.setPostalCode(req.getPostalCode());
+        if (req.getNationality() != null) p.setNationality(req.getNationality());
+        if (req.getTribe() != null) p.setTribe(req.getTribe());
+        if (req.getReligion() != null) p.setReligion(req.getReligion());
+        if (req.getHomeLanguage() != null) p.setHomeLanguage(req.getHomeLanguage());
+        if (req.getBloodGroup() != null) p.setBloodGroup(req.getBloodGroup());
+        if (req.getAllergies() != null) p.setAllergies(req.getAllergies());
+        if (req.getMedicalInfo() != null) p.setMedicalInfo(req.getMedicalInfo());
+        if (req.getSpecialNeeds() != null) p.setSpecialNeeds(req.getSpecialNeeds());
+        if (req.getNrcNo() != null) p.setNrcNo(req.getNrcNo());
+        if (req.getBirthCertNo() != null) p.setBirthCertNo(req.getBirthCertNo());
+        if (req.getPreviousSchool() != null) p.setPreviousSchool(req.getPreviousSchool());
+        if (req.getReferralSource() != null) p.setReferralSource(req.getReferralSource());
+        if (req.getSiblingsInSchool() != null) p.setSiblingsInSchool(req.getSiblingsInSchool());
+        if (req.getHouse() != null) p.setHouse(req.getHouse());
+        if (req.getBoardingStatus() != null) p.setBoardingStatus(req.getBoardingStatus());
+        if (req.getTransportMode() != null) p.setTransportMode(req.getTransportMode());
+        if (req.getEmergencyContact() != null) p.setEmergencyContact(req.getEmergencyContact());
+        if (req.getPhotoUrl() != null) p.setPhotoUrl(req.getPhotoUrl());
+        if (req.getNotes() != null) p.setNotes(req.getNotes());
         if (req.getAdmittedOn() != null) p.setAdmittedOn(req.getAdmittedOn());
         if (req.getStatus() != null) p.setStatus(req.getStatus());
-        if (req.getClassId() != null) {
-            SchoolClass sc = classRepo.findById(req.getClassId())
-                    .orElseThrow(() -> new EntityNotFoundException("Class not found"));
-            p.setSchoolClass(sc);
-        }
+        SchoolClass sc = req.getClassId() != null
+                ? classRepo.findById(req.getClassId()).orElseThrow(() -> new EntityNotFoundException("Class not found"))
+                : null;
+        p.setSchoolClass(sc);
         return p;
     }
 

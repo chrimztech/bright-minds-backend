@@ -1,13 +1,13 @@
 package com.brightminds.school.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
 public class AuthRequest {
-    @Email @NotBlank
-    private String email;
+    // Either an email address or a phone number — parents may log in with either.
+    @NotBlank
+    private String identifier;
     @NotBlank
     private String password;
 }

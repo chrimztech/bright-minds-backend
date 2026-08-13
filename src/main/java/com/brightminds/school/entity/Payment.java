@@ -1,6 +1,7 @@
 package com.brightminds.school.entity;
 
 import com.brightminds.school.entity.enums.PaymentMethod;
+import com.brightminds.school.entity.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -24,11 +25,14 @@ public class Payment {
     @Column(name = "receipt_no", nullable = false, unique = true)
     private String receiptNo;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // Eager: this entity is always serialized directly to JSON (payment lists, receipts,
+    // pending-confirmation queues) with these nested — lazy proxies aren't Jackson-serializable
+    // without an extra Hibernate module, so this avoided a 500 on every payments list fetch.
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "pupil_id", nullable = false)
     private Pupil pupil;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "invoice_id")
     private Invoice invoice;
 
@@ -49,6 +53,17 @@ public class Payment {
 
     @Column(name = "recorded_by")
     private UUID recordedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private PaymentStatus status = PaymentStatus.CONFIRMED;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "submitted_by_guardian_id")
+    private Guardian submittedBy;
+
+    @Column(name = "rejection_reason")
+    private String rejectionReason;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

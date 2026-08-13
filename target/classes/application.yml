@@ -3,7 +3,7 @@ spring:
     name: bright-minds-school-hub
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/bright_minds_db}
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:11111111}
     driver-class-name: org.postgresql.Driver
@@ -47,6 +47,8 @@ app:
     email: ${BOOTSTRAP_ADMIN_EMAIL:admin@school.demo}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123!}
     full-name: ${BOOTSTRAP_ADMIN_NAME:System Administrator}
+  backup:
+    pg-dump-path: ${PG_DUMP_PATH:pg_dump}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://localhost:4173,http://localhost:8080}
 

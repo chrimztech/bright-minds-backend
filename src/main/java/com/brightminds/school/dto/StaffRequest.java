@@ -19,6 +19,8 @@ public class StaffRequest {
     private LocalDate dob;
     private LocalDate dateJoined;
     private String employmentType;
+    private LocalDate contractEndDate;
+    private String roleCategory;
     private boolean isTeacher;
     private BigDecimal basicSalary;
     private String qualifications;
@@ -27,6 +29,7 @@ public class StaffRequest {
     private String bankAccount;
     private String photoUrl;
     private StaffStatus status;
+    private String temporaryPassword;
 
     // Explicit accessors: Jackson strips the "is" prefix from Lombok's isTeacher()/setTeacher()
     // by default, which would bind this as "teacher" instead of "isTeacher".

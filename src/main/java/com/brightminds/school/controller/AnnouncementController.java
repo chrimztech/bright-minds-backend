@@ -8,6 +8,8 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +24,17 @@ public class AnnouncementController {
     private final AnnouncementRepository repo;
 
     @GetMapping
-    public List<Announcement> list() { return repo.findAllByOrderByCreatedAtDesc(); }
+    public List<Announcement> list(@AuthenticationPrincipal UserDetails principal) {
+        List<Announcement> all = repo.findAllByOrderByCreatedAtDesc();
+        boolean isParentOnly = principal != null && principal.getAuthorities().stream()
+                .allMatch(a -> a.getAuthority().equals("ROLE_PARENT"));
+        if (!isParentOnly) return all;
+        return all.stream()
+                .filter(a -> a.getAudience() == null
+                        || a.getAudience().equalsIgnoreCase("all")
+                        || a.getAudience().equalsIgnoreCase("parents"))
+                .toList();
+    }
 
     @GetMapping("/{id}")
     public Announcement getById(@PathVariable UUID id) {

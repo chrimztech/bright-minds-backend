@@ -1,6 +1,7 @@
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\BrightMindsApplication.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\config\CorsConfig.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\config\DataInitializer.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\config\JacksonConfig.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\config\OpenApiConfig.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\config\SecurityConfig.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\AcademicYearController.java
@@ -72,6 +73,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\LeaveStatus.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\LoanStatus.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\PaymentMethod.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\PaymentStatus.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\PayrollStatus.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\PoStatus.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\enums\PupilStatus.java
@@ -171,9 +173,11 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\securit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\AuditService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\AuthService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\DashboardService.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\FeeAutoBillingService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\GlobalExceptionHandler.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\GuardianAccountService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\ParentPortalService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PromotionService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PupilService.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\StaffAccountService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\StaffService.java

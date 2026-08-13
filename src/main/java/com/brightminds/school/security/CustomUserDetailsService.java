@@ -15,11 +15,13 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     private final AppUserRepository userRepository;
 
+    // Accepts either an email or a phone number: parents may log in with either.
     @Override
     @Transactional(readOnly = true)
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        AppUser user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
+    public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
+        AppUser user = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByPhone(identifier))
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + identifier));
         return new CustomUserDetails(user);
     }
 }

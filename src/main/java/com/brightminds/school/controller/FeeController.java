@@ -3,6 +3,7 @@ package com.brightminds.school.controller;
 import com.brightminds.school.entity.*;
 import com.brightminds.school.entity.enums.InvoiceStatus;
 import com.brightminds.school.entity.enums.PaymentMethod;
+import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -123,6 +124,11 @@ public class FeeController {
         return paymentRepo.findAllByOrderByPaidOnDesc();
     }
 
+    @GetMapping("/payments/pending")
+    public List<Payment> pendingPayments() {
+        return paymentRepo.findByStatusOrderByCreatedAtDesc(PaymentStatus.PENDING);
+    }
+
     @PostMapping("/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public Payment createPayment(@RequestBody PaymentRequest req) {
@@ -133,29 +139,58 @@ public class FeeController {
             invoice = invoiceRepo.findById(req.getInvoiceId())
                     .orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
             pupil = invoice.getPupil();
-            BigDecimal newPaid = invoice.getPaid().add(req.getAmount());
-            invoice.setPaid(newPaid);
-            invoice.setStatus(newPaid.compareTo(invoice.getTotal()) >= 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIAL);
-            invoiceRepo.save(invoice);
         } else if (req.getPupilId() != null) {
             pupil = pupilRepo.findById(req.getPupilId())
                     .orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
         }
-
         if (pupil == null) throw new IllegalArgumentException("Either invoiceId or pupilId is required");
 
-        String receiptNo = "RCT-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
-                + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
         Payment payment = Payment.builder()
-                .receiptNo(receiptNo)
+                .receiptNo(generateReceiptNo())
                 .pupil(pupil)
                 .invoice(invoice)
                 .amount(req.getAmount())
                 .method(req.getMethod() != null ? req.getMethod() : PaymentMethod.CASH)
                 .paidOn(req.getPaidOn() != null ? req.getPaidOn() : LocalDate.now())
                 .reference(req.getReference())
+                .status(PaymentStatus.CONFIRMED)
                 .build();
+        if (invoice != null) applyToInvoice(invoice, payment.getAmount());
         return paymentRepo.save(payment);
+    }
+
+    @PatchMapping("/payments/{id}/confirm")
+    public Payment confirmPayment(@PathVariable UUID id) {
+        Payment payment = paymentRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending payments can be confirmed");
+        }
+        if (payment.getInvoice() != null) applyToInvoice(payment.getInvoice(), payment.getAmount());
+        payment.setStatus(PaymentStatus.CONFIRMED);
+        return paymentRepo.save(payment);
+    }
+
+    @PatchMapping("/payments/{id}/reject")
+    public Payment rejectPayment(@PathVariable UUID id, @RequestBody(required = false) RejectRequest req) {
+        Payment payment = paymentRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payment not found"));
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending payments can be rejected");
+        }
+        payment.setStatus(PaymentStatus.REJECTED);
+        payment.setRejectionReason(req != null ? req.getReason() : null);
+        return paymentRepo.save(payment);
+    }
+
+    private void applyToInvoice(Invoice invoice, BigDecimal amount) {
+        BigDecimal newPaid = invoice.getPaid().add(amount);
+        invoice.setPaid(newPaid);
+        invoice.setStatus(newPaid.compareTo(invoice.getTotal()) >= 0 ? InvoiceStatus.PAID : InvoiceStatus.PARTIAL);
+        invoiceRepo.save(invoice);
+    }
+
+    private String generateReceiptNo() {
+        return "RCT-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
+                + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
     }
 
     // ─── DTOs ─────────────────────────────────────────────────────────────────
@@ -186,5 +221,9 @@ public class FeeController {
         private PaymentMethod method;
         private LocalDate paidOn;
         private String reference;
+    }
+
+    @Data public static class RejectRequest {
+        private String reason;
     }
 }

@@ -2,6 +2,8 @@ package com.brightminds.school.controller;
 
 import com.brightminds.school.dto.ParentPortalDto;
 import com.brightminds.school.entity.*;
+import com.brightminds.school.entity.enums.PaymentMethod;
+import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import com.brightminds.school.service.GuardianAccountService;
 import com.brightminds.school.service.ParentPortalService;
@@ -16,7 +18,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,6 +31,7 @@ public class GuardianController {
     private final GuardianPupilRepository gpRepo;
     private final PupilRepository pupilRepo;
     private final InvoiceRepository invoiceRepo;
+    private final PaymentRepository paymentRepo;
     private final AttendanceRepository attendanceRepo;
     private final MarkRepository markRepo;
     private final ParentPortalService portalService;
@@ -63,6 +68,48 @@ public class GuardianController {
                 .map(gp -> gp.getPupil().getId()).toList();
         if (pupilIds.isEmpty()) return List.of();
         return invoiceRepo.findByPupilIdInOrderByCreatedAtDesc(pupilIds);
+    }
+
+    // Parent self-service: "I've paid" claim. Does NOT touch the invoice balance —
+    // it's recorded as PENDING until an admin confirms it under Fees > Pending confirmations.
+    @PostMapping("/me/payments")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('PARENT')")
+    public Payment submitPayment(@AuthenticationPrincipal UserDetails principal, @RequestBody ParentPaymentRequest req) {
+        Guardian g = portalService.currentGuardian(principal);
+        if (g == null) throw new EntityNotFoundException("Guardian not found");
+        Invoice invoice = invoiceRepo.findById(req.getInvoiceId())
+                .orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
+        boolean ownsChild = gpRepo.findByGuardianId(g.getId()).stream()
+                .anyMatch(gp -> gp.getPupil().getId().equals(invoice.getPupil().getId()));
+        if (!ownsChild) throw new IllegalArgumentException("That invoice does not belong to your child");
+        if (req.getAmount() == null || req.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero");
+        }
+        String receiptNo = "RCT-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
+                + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        Payment payment = Payment.builder()
+                .receiptNo(receiptNo)
+                .pupil(invoice.getPupil())
+                .invoice(invoice)
+                .amount(req.getAmount())
+                .method(req.getMethod() != null ? req.getMethod() : PaymentMethod.BANK)
+                .paidOn(req.getPaidOn() != null ? req.getPaidOn() : LocalDate.now())
+                .reference(req.getReference())
+                .status(PaymentStatus.PENDING)
+                .submittedBy(g)
+                .build();
+        return paymentRepo.save(payment);
+    }
+
+    @GetMapping("/me/payments")
+    @PreAuthorize("hasRole('PARENT')")
+    public List<Payment> myPaymentClaims(@AuthenticationPrincipal UserDetails principal) {
+        Guardian g = portalService.currentGuardian(principal);
+        if (g == null) return List.of();
+        return paymentRepo.findAllByOrderByPaidOnDesc().stream()
+                .filter(p -> p.getSubmittedBy() != null && p.getSubmittedBy().getId().equals(g.getId()))
+                .toList();
     }
 
     @GetMapping("/me/attendance")
@@ -118,6 +165,12 @@ public class GuardianController {
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
     public Guardian get(@PathVariable UUID id) { return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Guardian not found")); }
 
+    @GetMapping("/{id}/pupils")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    public List<Pupil> pupilsFor(@PathVariable UUID id) {
+        return gpRepo.findByGuardianId(id).stream().map(GuardianPupil::getPupil).toList();
+    }
+
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
     public Guardian create(@RequestBody GuardianRequest req) {
@@ -168,4 +221,12 @@ public class GuardianController {
     }
 
     @Data public static class ParentAccountRequest { private String temporaryPassword; }
+
+    @Data public static class ParentPaymentRequest {
+        private UUID invoiceId;
+        private BigDecimal amount;
+        private PaymentMethod method;
+        private LocalDate paidOn;
+        private String reference;
+    }
 }

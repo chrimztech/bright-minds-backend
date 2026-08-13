@@ -33,6 +33,12 @@ public class Invoice {
     @JoinColumn(name = "term_id")
     private Term term;
 
+    // Set only for invoices auto-generated from a recurring fee item (registration/class
+    // change billing) — lets us tell "already billed for this fee" from "never billed".
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "fee_item_id")
+    private FeeItem feeItem;
+
     @Column(nullable = false, precision = 12, scale = 2)
     @Builder.Default
     private BigDecimal total = BigDecimal.ZERO;

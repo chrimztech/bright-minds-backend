@@ -1,0 +1,3 @@
+ALTER TABLE payments ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'CONFIRMED';
+ALTER TABLE payments ADD COLUMN submitted_by_guardian_id UUID REFERENCES guardians(id) ON DELETE SET NULL;
+ALTER TABLE payments ADD COLUMN rejection_reason TEXT;

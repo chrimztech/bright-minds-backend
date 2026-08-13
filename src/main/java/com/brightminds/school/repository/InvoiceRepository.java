@@ -15,4 +15,5 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     List<Invoice> findByStatus(InvoiceStatus status);
     Optional<Invoice> findByInvoiceNo(String invoiceNo);
     boolean existsByInvoiceNo(String invoiceNo);
+    boolean existsByPupilIdAndFeeItemId(UUID pupilId, UUID feeItemId);
 }

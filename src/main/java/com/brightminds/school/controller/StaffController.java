@@ -6,9 +6,11 @@ import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.Staff;
 import com.brightminds.school.repository.AppUserRepository;
 import com.brightminds.school.repository.StaffRepository;
+import com.brightminds.school.service.StaffAccountService;
 import com.brightminds.school.service.StaffService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +31,7 @@ public class StaffController {
     private final StaffService staffService;
     private final StaffRepository staffRepo;
     private final AppUserRepository userRepo;
+    private final StaffAccountService staffAccountService;
 
     @GetMapping
     public PageResponse<Staff> list(
@@ -66,4 +69,15 @@ public class StaffController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { staffService.delete(id); }
+
+    @PostMapping("/{id}/account")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    public Staff provisionAccount(@PathVariable UUID id, @RequestBody AccountRequest req) {
+        return staffAccountService.provision(id, req.getTemporaryPassword());
+    }
+
+    @Data
+    public static class AccountRequest {
+        private String temporaryPassword;
+    }
 }

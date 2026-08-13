@@ -59,7 +59,7 @@ public class AuthService {
 
     public AuthResponse login(AuthRequest req) {
         Authentication auth = authManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
+                new UsernamePasswordAuthenticationToken(req.getIdentifier(), req.getPassword()));
         CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
         auditService.log("LOGIN", "AppUser", details.getUser().getId().toString(), details.getUsername());
         return buildResponse(details);

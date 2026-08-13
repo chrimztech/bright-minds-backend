@@ -22,6 +22,7 @@ import java.util.UUID;
 public class StaffService {
 
     private final StaffRepository staffRepo;
+    private final StaffAccountService staffAccountService;
 
     @Transactional(readOnly = true)
     public List<Staff> getAll() {
@@ -50,7 +51,8 @@ public class StaffService {
             throw new IllegalArgumentException("Staff number already exists: " + staffNo);
         }
         req.setStaffNo(staffNo);
-        return staffRepo.save(mapToEntity(req, new Staff()));
+        Staff saved = staffRepo.save(mapToEntity(req, new Staff()));
+        return staffAccountService.sync(saved, req.getTemporaryPassword());
     }
 
     @Transactional
@@ -64,7 +66,8 @@ public class StaffService {
         } else {
             req.setStaffNo(staffNo);
         }
-        return staffRepo.save(mapToEntity(req, s));
+        Staff saved = staffRepo.save(mapToEntity(req, s));
+        return staffAccountService.sync(saved, req.getTemporaryPassword());
     }
 
     @Transactional
@@ -80,20 +83,22 @@ public class StaffService {
     private Staff mapToEntity(StaffRequest req, Staff s) {
         s.setFullName(req.getFullName());
         s.setStaffNo(req.getStaffNo());
-        s.setGender(req.getGender());
-        s.setEmail(req.getEmail());
-        s.setPhone(req.getPhone());
-        s.setAddress(req.getAddress());
-        s.setDob(req.getDob());
-        s.setDateJoined(req.getDateJoined());
-        s.setEmploymentType(req.getEmploymentType());
         s.setTeacher(req.isTeacher());
-        s.setBasicSalary(req.getBasicSalary());
-        s.setQualifications(req.getQualifications());
-        s.setNextOfKin(req.getNextOfKin());
-        s.setBankName(req.getBankName());
-        s.setBankAccount(req.getBankAccount());
-        s.setPhotoUrl(req.getPhotoUrl());
+        if (req.getGender() != null) s.setGender(req.getGender());
+        if (req.getEmail() != null) s.setEmail(req.getEmail());
+        if (req.getPhone() != null) s.setPhone(req.getPhone());
+        if (req.getAddress() != null) s.setAddress(req.getAddress());
+        if (req.getDob() != null) s.setDob(req.getDob());
+        if (req.getDateJoined() != null) s.setDateJoined(req.getDateJoined());
+        if (req.getEmploymentType() != null) s.setEmploymentType(req.getEmploymentType());
+        s.setContractEndDate(req.getContractEndDate());
+        if (req.getRoleCategory() != null) s.setRoleCategory(req.getRoleCategory());
+        if (req.getBasicSalary() != null) s.setBasicSalary(req.getBasicSalary());
+        if (req.getQualifications() != null) s.setQualifications(req.getQualifications());
+        if (req.getNextOfKin() != null) s.setNextOfKin(req.getNextOfKin());
+        if (req.getBankName() != null) s.setBankName(req.getBankName());
+        if (req.getBankAccount() != null) s.setBankAccount(req.getBankAccount());
+        if (req.getPhotoUrl() != null) s.setPhotoUrl(req.getPhotoUrl());
         if (req.getStatus() != null) s.setStatus(req.getStatus());
         return s;
     }

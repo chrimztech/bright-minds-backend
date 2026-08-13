@@ -43,6 +43,12 @@ public class Staff {
     @Column(name = "employment_type")
     private String employmentType;
 
+    @Column(name = "contract_end_date")
+    private LocalDate contractEndDate;
+
+    @Column(name = "role_category")
+    private String roleCategory;
+
     @Column(name = "is_teacher")
     @Builder.Default
     private boolean isTeacher = false;

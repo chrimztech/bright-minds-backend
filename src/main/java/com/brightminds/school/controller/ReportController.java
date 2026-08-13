@@ -1,6 +1,7 @@
 package com.brightminds.school.controller;
 
 import com.brightminds.school.entity.enums.LoanStatus;
+import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
@@ -37,6 +38,7 @@ public class ReportController {
         r.setTotalStaff(staff.count());
         r.setTotalClasses(classes.count());
         r.setFeesCollected(payments.findAll().stream()
+                .filter(p -> p.getStatus() == PaymentStatus.CONFIRMED)
                 .map(p -> p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add).doubleValue());
         r.setFeesBilled(invoices.findAll().stream()
