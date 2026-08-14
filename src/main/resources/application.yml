@@ -3,8 +3,8 @@ spring:
     name: bright-minds-school-hub
 
   datasource:
-    #url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/bright_minds_db}
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
+    #url: ${DB_URL:jdbc:postgresql://localhost:5433/bright_minds_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:11111111}
     driver-class-name: org.postgresql.Driver
