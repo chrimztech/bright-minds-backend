@@ -42,6 +42,9 @@ public class SchoolSetting {
     @Column(name = "head_teacher")
     private String headTeacher;
 
+    @Column(name = "head_teacher_signature_url")
+    private String headTeacherSignatureUrl;
+
     @Column(name = "deputy_head")
     private String deputyHead;
 

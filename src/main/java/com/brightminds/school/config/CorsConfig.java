@@ -24,6 +24,11 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(allowedOrigins);
+        // Dev machines routinely juggle several local projects, so Vite's "port already in
+        // use, trying another one" can land the frontend on any port — not just the ones
+        // above. Matching any localhost/127.0.0.1 port keeps local dev working regardless,
+        // while real deployments still only trust the explicit allowedOrigins list above.
+        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

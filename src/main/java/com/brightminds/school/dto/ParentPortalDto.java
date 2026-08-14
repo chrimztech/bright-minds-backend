@@ -56,6 +56,7 @@ public final class ParentPortalDto {
         private String fullName;
         private String email;
         private String phone;
+        private String signatureUrl;
     }
 
     @Data @Builder
@@ -101,6 +102,8 @@ public final class ParentPortalDto {
         private double averagePercentage;
         private String overallGrade;
         private AttendanceSummary attendance;
+        private String classTeacherRemark;
+        private String headTeacherRemark;
     }
 
     @Data @Builder

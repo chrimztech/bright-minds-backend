@@ -32,6 +32,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\control
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\PromotionController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\PtcController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\PupilController.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\ReportCardController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\ReportController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\RoleController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\SettingsController.java
@@ -104,6 +105,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PupilEnrollment.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PupilPromotion.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PurchaseOrder.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\ReportCardRemark.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Role.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\SchoolClass.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\SchoolSetting.java
@@ -155,6 +157,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\reposit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PupilPromotionRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PupilRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PurchaseOrderRepository.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\ReportCardRemarkRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\RoleRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\SchoolClassRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\SchoolSettingRepository.java

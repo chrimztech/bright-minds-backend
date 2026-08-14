@@ -27,6 +27,7 @@ public class ParentPortalService {
     private final TermRepository termRepo;
     private final AcademicYearRepository academicYearRepo;
     private final PupilEnrollmentRepository enrollmentRepo;
+    private final ReportCardRemarkRepository remarkRepo;
 
     public Guardian currentGuardian(UserDetails principal) {
         AppUser user = userRepo.findByEmail(principal.getUsername()).orElse(null);
@@ -165,6 +166,8 @@ public class ParentPortalService {
                 .map(PupilEnrollment::getSchoolClass)
                 .orElse(pupil.getSchoolClass());
 
+        ReportCardRemark remark = remarkRepo.findByPupilIdAndExamId(pupil.getId(), exam.getId()).orElse(null);
+
         return ParentPortalDto.ReportCard.builder()
                 .pupilId(pupil.getId())
                 .pupilName(pupil.getFullName())
@@ -186,6 +189,8 @@ public class ParentPortalService {
                 .attendance(attendanceSummary(
                         attendanceRepo.findByPupilIdAndDateBetween(pupil.getId(), attendanceFrom, attendanceTo),
                         attendanceFrom, attendanceTo))
+                .classTeacherRemark(remark != null ? remark.getClassTeacherRemark() : null)
+                .headTeacherRemark(remark != null ? remark.getHeadTeacherRemark() : null)
                 .build();
     }
 
@@ -222,6 +227,7 @@ public class ParentPortalService {
                         .fullName(teacher.getFullName())
                         .email(teacher.getEmail())
                         .phone(teacher.getPhone())
+                        .signatureUrl(teacher.getSignatureUrl())
                         .build())
                 .build();
     }

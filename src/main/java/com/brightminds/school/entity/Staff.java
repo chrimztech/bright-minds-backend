@@ -78,6 +78,9 @@ public class Staff {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    @Column(name = "signature_url")
+    private String signatureUrl;
+
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Builder.Default

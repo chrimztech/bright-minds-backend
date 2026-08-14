@@ -115,6 +115,7 @@ com\brightminds\school\entity\PurchaseOrder.class
 com\brightminds\school\controller\LibraryController$BookRequest.class
 com\brightminds\school\controller\ProcurementController$OrderReq.class
 com\brightminds\school\repository\GuardianPupilRepository.class
+com\brightminds\school\repository\ReportCardRemarkRepository.class
 com\brightminds\school\repository\TermRepository.class
 com\brightminds\school\controller\CanteenController.class
 com\brightminds\school\entity\PtcSession.class
@@ -205,6 +206,7 @@ com\brightminds\school\entity\LeaveRequest$LeaveRequestBuilder.class
 com\brightminds\school\controller\PromotionController.class
 com\brightminds\school\repository\CanteenMealPlanRepository.class
 com\brightminds\school\entity\AuditLog.class
+com\brightminds\school\controller\SettingsController$SettingsRequest.class
 com\brightminds\school\entity\AppUser$AppUserBuilder.class
 com\brightminds\school\repository\AcademicYearRepository.class
 com\brightminds\school\dto\AuthResponse.class
@@ -240,6 +242,7 @@ com\brightminds\school\controller\SettingsController.class
 com\brightminds\school\entity\CanteenSubscription$CanteenSubscriptionBuilder.class
 com\brightminds\school\entity\InventoryItem.class
 com\brightminds\school\entity\Pupil.class
+com\brightminds\school\controller\ReportCardController$RemarkRequest.class
 com\brightminds\school\controller\AcademicYearController$TermRequest.class
 com\brightminds\school\controller\HomeworkController.class
 com\brightminds\school\dto\PageResponse.class
@@ -277,9 +280,11 @@ com\brightminds\school\entity\AuditLog$AuditLogBuilder.class
 com\brightminds\school\security\JwtUtil.class
 com\brightminds\school\controller\ClassController.class
 com\brightminds\school\controller\PtcController$SessionRequest.class
+com\brightminds\school\controller\ReportCardController.class
 com\brightminds\school\repository\EventRepository.class
 com\brightminds\school\repository\InvoiceRepository.class
 com\brightminds\school\entity\LibraryBook.class
+com\brightminds\school\entity\ReportCardRemark.class
 com\brightminds\school\repository\RoleRepository.class
 com\brightminds\school\repository\PtcMeetingRepository.class
 com\brightminds\school\repository\AppUserRepository.class
@@ -290,6 +295,7 @@ com\brightminds\school\controller\RoleController.class
 com\brightminds\school\controller\TransportController.class
 com\brightminds\school\repository\AdmissionRepository.class
 com\brightminds\school\entity\PupilPromotion$PupilPromotionBuilder.class
+com\brightminds\school\entity\ReportCardRemark$ReportCardRemarkBuilder.class
 com\brightminds\school\repository\InventoryTxnRepository.class
 com\brightminds\school\security\JwtFilter.class
 com\brightminds\school\controller\HomeworkController$HWRequest.class

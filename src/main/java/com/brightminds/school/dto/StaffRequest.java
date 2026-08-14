@@ -28,6 +28,7 @@ public class StaffRequest {
     private String bankName;
     private String bankAccount;
     private String photoUrl;
+    private String signatureUrl;
     private StaffStatus status;
     private String temporaryPassword;
 

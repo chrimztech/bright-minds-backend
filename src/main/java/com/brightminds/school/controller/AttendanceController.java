@@ -39,6 +39,14 @@ public class AttendanceController {
         return attendanceRepo.findByDate(date);
     }
 
+    @GetMapping("/range")
+    public List<Attendance> range(
+            @RequestParam UUID classId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return attendanceRepo.findBySchoolClassIdAndDateBetweenOrderByDateAsc(classId, from, to);
+    }
+
     @GetMapping("/pupil/{pupilId}")
     public List<Attendance> byPupil(
             @PathVariable UUID pupilId,

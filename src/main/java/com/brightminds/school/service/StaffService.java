@@ -99,6 +99,7 @@ public class StaffService {
         if (req.getBankName() != null) s.setBankName(req.getBankName());
         if (req.getBankAccount() != null) s.setBankAccount(req.getBankAccount());
         if (req.getPhotoUrl() != null) s.setPhotoUrl(req.getPhotoUrl());
+        if (req.getSignatureUrl() != null) s.setSignatureUrl(req.getSignatureUrl());
         if (req.getStatus() != null) s.setStatus(req.getStatus());
         return s;
     }
