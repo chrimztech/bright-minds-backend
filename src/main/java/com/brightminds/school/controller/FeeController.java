@@ -72,10 +72,14 @@ public class FeeController {
     @GetMapping("/invoices")
     public List<Invoice> listInvoices(
             @RequestParam(required = false) UUID pupilId,
-            @RequestParam(required = false) UUID termId) {
-        if (pupilId != null) return invoiceRepo.findByPupilIdOrderByCreatedAtDesc(pupilId);
-        if (termId != null) return invoiceRepo.findByTerm_IdOrderByCreatedAtDesc(termId);
-        return invoiceRepo.findAllByOrderByCreatedAtDesc();
+            @RequestParam(required = false) UUID termId,
+            @RequestParam(required = false) UUID classId,
+            @RequestParam(required = false) String grade) {
+        List<Invoice> base;
+        if (pupilId != null) base = invoiceRepo.findByPupilIdOrderByCreatedAtDesc(pupilId);
+        else if (termId != null) base = invoiceRepo.findByTerm_IdOrderByCreatedAtDesc(termId);
+        else base = invoiceRepo.findAllByOrderByCreatedAtDesc();
+        return filterByClassAndGrade(base, Invoice::getPupil, classId, grade);
     }
 
     @GetMapping("/invoices/{id}")
@@ -118,10 +122,14 @@ public class FeeController {
     @GetMapping("/payments")
     public List<Payment> listPayments(
             @RequestParam(required = false) UUID pupilId,
-            @RequestParam(required = false) UUID invoiceId) {
-        if (invoiceId != null) return paymentRepo.findByInvoiceIdOrderByPaidOnDesc(invoiceId);
-        if (pupilId != null) return paymentRepo.findByPupilIdOrderByPaidOnDesc(pupilId);
-        return paymentRepo.findAllByOrderByPaidOnDesc();
+            @RequestParam(required = false) UUID invoiceId,
+            @RequestParam(required = false) UUID classId,
+            @RequestParam(required = false) String grade) {
+        List<Payment> base;
+        if (invoiceId != null) base = paymentRepo.findByInvoiceIdOrderByPaidOnDesc(invoiceId);
+        else if (pupilId != null) base = paymentRepo.findByPupilIdOrderByPaidOnDesc(pupilId);
+        else base = paymentRepo.findAllByOrderByPaidOnDesc();
+        return filterByClassAndGrade(base, Payment::getPupil, classId, grade);
     }
 
     @GetMapping("/payments/pending")
@@ -179,6 +187,25 @@ public class FeeController {
         payment.setStatus(PaymentStatus.REJECTED);
         payment.setRejectionReason(req != null ? req.getReason() : null);
         return paymentRepo.save(payment);
+    }
+
+    // Grade groups every stream sharing a class name (e.g. "Grade 1 A" + "Grade 1 B"),
+    // while classId narrows to one specific class/stream.
+    private <T> List<T> filterByClassAndGrade(List<T> rows, java.util.function.Function<T, Pupil> pupilOf, UUID classId, String grade) {
+        List<T> result = rows;
+        if (classId != null) {
+            result = result.stream()
+                    .filter(r -> pupilOf.apply(r).getSchoolClass() != null
+                            && classId.equals(pupilOf.apply(r).getSchoolClass().getId()))
+                    .toList();
+        }
+        if (grade != null && !grade.isBlank()) {
+            result = result.stream()
+                    .filter(r -> pupilOf.apply(r).getSchoolClass() != null
+                            && grade.equalsIgnoreCase(pupilOf.apply(r).getSchoolClass().getName()))
+                    .toList();
+        }
+        return result;
     }
 
     private void applyToInvoice(Invoice invoice, BigDecimal amount) {

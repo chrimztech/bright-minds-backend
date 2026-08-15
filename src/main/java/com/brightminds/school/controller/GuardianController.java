@@ -102,13 +102,19 @@ public class GuardianController {
         return paymentRepo.save(payment);
     }
 
+    // Full payment history for the parent's children — every payment against their
+    // invoices, not just ones the parent submitted themselves (a cash payment recorded
+    // in the office by an admin has no submittedBy but must still show here).
     @GetMapping("/me/payments")
     @PreAuthorize("hasRole('PARENT')")
     public List<Payment> myPaymentClaims(@AuthenticationPrincipal UserDetails principal) {
         Guardian g = portalService.currentGuardian(principal);
         if (g == null) return List.of();
+        List<UUID> pupilIds = gpRepo.findByGuardianId(g.getId()).stream()
+                .map(gp -> gp.getPupil().getId()).toList();
+        if (pupilIds.isEmpty()) return List.of();
         return paymentRepo.findAllByOrderByPaidOnDesc().stream()
-                .filter(p -> p.getSubmittedBy() != null && p.getSubmittedBy().getId().equals(g.getId()))
+                .filter(p -> pupilIds.contains(p.getPupil().getId()))
                 .toList();
     }
 
