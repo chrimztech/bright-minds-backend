@@ -1,6 +1,5 @@
 package com.brightminds.school.entity;
 
-import com.brightminds.school.entity.enums.AppRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

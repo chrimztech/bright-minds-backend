@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -37,6 +38,7 @@ public class PtcController {
         return sessionRepo.findAllByOrderBySessionDateDesc();
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @PostMapping("/sessions")
     @ResponseStatus(HttpStatus.CREATED)
     public PtcSession createSession(@RequestBody SessionRequest req) {
@@ -52,6 +54,7 @@ public class PtcController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @PutMapping("/sessions/{id}")
     public PtcSession updateSession(@PathVariable UUID id, @RequestBody SessionRequest req) {
         PtcSession s = sessionRepo.findById(id).orElseThrow(EntityNotFoundException::new);
@@ -66,6 +69,7 @@ public class PtcController {
         return sessionRepo.save(s);
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @DeleteMapping("/sessions/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteSession(@PathVariable UUID id) {
@@ -98,6 +102,7 @@ public class PtcController {
         return meetingRepo.findByGuardianIdOrderByMeetingDateAscStartTimeAsc(g.getId());
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @PostMapping("/meetings")
     @ResponseStatus(HttpStatus.CREATED)
     public PtcMeeting createMeeting(@RequestBody MeetingRequest req) {
@@ -119,6 +124,7 @@ public class PtcController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @PutMapping("/meetings/{id}")
     public PtcMeeting updateMeeting(@PathVariable UUID id, @RequestBody MeetingUpdateRequest req) {
         PtcMeeting m = meetingRepo.findById(id).orElseThrow(EntityNotFoundException::new);
@@ -133,6 +139,7 @@ public class PtcController {
         return meetingRepo.save(m);
     }
 
+    @PreAuthorize("@perm.has('ptc:manage')")
     @DeleteMapping("/meetings/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteMeeting(@PathVariable UUID id) {

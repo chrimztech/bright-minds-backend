@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/admin/backup")
 @RequiredArgsConstructor
 @Tag(name = "Backup")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+@PreAuthorize("@perm.has('backup:create')")
 public class BackupController {
 
     private final PupilRepository pupils;

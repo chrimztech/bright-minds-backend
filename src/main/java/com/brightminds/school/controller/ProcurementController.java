@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/procurement") @RequiredArgsConstructor @Tag(name = "Procurement")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('procurement:manage')")
 public class ProcurementController {
     private final PurchaseOrderRepository poRepo;
     private final SupplierRepository supplierRepo;

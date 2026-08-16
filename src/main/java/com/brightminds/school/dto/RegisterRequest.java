@@ -1,6 +1,5 @@
 package com.brightminds.school.dto;
 
-import com.brightminds.school.entity.enums.AppRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -20,5 +19,5 @@ public class RegisterRequest {
 
     private String phone;
 
-    private List<AppRole> roles;
+    private List<String> roles;
 }

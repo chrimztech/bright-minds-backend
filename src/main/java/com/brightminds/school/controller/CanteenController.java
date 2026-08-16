@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/canteen") @RequiredArgsConstructor @Tag(name = "Canteen")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','HEAD_TEACHER','ADMIN','ACCOUNTANT')")
+@PreAuthorize("@perm.has('canteen:manage')")
 public class CanteenController {
     private final CanteenMenuItemRepository menuRepo;
     private final CanteenMealPlanRepository planRepo;
@@ -44,11 +44,14 @@ public class CanteenController {
         if (date != null && !date.isBlank()) return saleRepo.findByServedOn(java.time.LocalDate.parse(date));
         return saleRepo.findAll(); }
     @PostMapping("/sales") @ResponseStatus(HttpStatus.CREATED) public CanteenSale recordSale(@RequestBody SaleReq req) {
+        if (req.getPupilId() == null) throw new IllegalArgumentException("Pupil is required");
+        var pupil = pupilRepo.findById(req.getPupilId())
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Pupil not found"));
         var sale = CanteenSale.builder().itemName(req.getItemName()).quantity(req.getQuantity())
                 .unitPrice(req.getUnitPrice()).total(req.getUnitPrice().multiply(BigDecimal.valueOf(req.getQuantity())))
-                .paymentMethod(req.getPaymentMethod() != null ? req.getPaymentMethod() : "cash").notes(req.getNotes()).build();
+                .paymentMethod(req.getPaymentMethod() != null ? req.getPaymentMethod() : "cash").notes(req.getNotes())
+                .pupil(pupil).build();
         if (req.getItemId() != null) menuRepo.findById(req.getItemId()).ifPresent(sale::setItem);
-        if (req.getPupilId() != null) pupilRepo.findById(req.getPupilId()).ifPresent(sale::setPupil);
         return saleRepo.save(sale);
     }
     @DeleteMapping("/sales/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteSale(@PathVariable UUID id) { saleRepo.deleteById(id); }

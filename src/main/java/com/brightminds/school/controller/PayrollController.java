@@ -23,7 +23,7 @@ import java.util.UUID;
 @RequestMapping("/payroll")
 @RequiredArgsConstructor
 @Tag(name = "Payroll")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','HEAD_TEACHER','ADMIN','ACCOUNTANT')")
+@PreAuthorize("@perm.has('payroll:manage')")
 public class PayrollController {
 
     private final PayrollPeriodRepository periodRepo;

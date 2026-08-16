@@ -21,7 +21,7 @@ import java.util.UUID;
 @RequestMapping("/admissions")
 @RequiredArgsConstructor
 @Tag(name = "Admissions")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('admissions:manage')")
 public class AdmissionController {
 
     private final AdmissionRepository repo;

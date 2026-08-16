@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalTime;
 import java.util.List;
@@ -23,6 +24,7 @@ public class TimetableController {
         if (classId != null) return repo.findBySchoolClassIdOrderByDayOfWeekAscStartTimeAsc(classId);
         return repo.findAll();
     }
+    @PreAuthorize("@perm.has('timetable:manage')")
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public TimetableSlot create(@RequestBody SlotRequest req) {
         var sc = classRepo.findById(req.getClassId()).orElseThrow(() -> new EntityNotFoundException("Class not found"));
         var slot = TimetableSlot.builder().schoolClass(sc).dayOfWeek(req.getDayOfWeek()).startTime(req.getStartTime()).endTime(req.getEndTime()).room(req.getRoom()).build();
@@ -30,6 +32,7 @@ public class TimetableController {
         if (req.getTeacherId() != null) staffRepo.findById(req.getTeacherId()).ifPresent(slot::setTeacher);
         return repo.save(slot);
     }
+    @PreAuthorize("@perm.has('timetable:manage')")
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable UUID id) { repo.deleteById(id); }
 
     @Data public static class SlotRequest {

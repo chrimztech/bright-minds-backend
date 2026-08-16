@@ -53,7 +53,7 @@ public class AnnouncementController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('announcements:post')")
     public Announcement create(@RequestBody AnnouncementRequest req) {
         return repo.save(Announcement.builder()
                 .title(req.getTitle())
@@ -63,7 +63,7 @@ public class AnnouncementController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('announcements:post')")
     public Announcement update(@PathVariable UUID id, @RequestBody AnnouncementRequest req) {
         Announcement a = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Not found"));
         a.setTitle(req.getTitle());
@@ -74,7 +74,7 @@ public class AnnouncementController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('announcements:post')")
     public void delete(@PathVariable UUID id) { repo.deleteById(id); }
 
     @Data

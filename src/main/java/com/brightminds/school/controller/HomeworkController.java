@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,6 +23,7 @@ public class HomeworkController {
         if (classId != null) return repo.findBySchoolClassIdOrderByDueDateDesc(classId);
         return repo.findAllByOrderByCreatedAtDesc();
     }
+    @PreAuthorize("@perm.has('homework:manage')")
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public Homework create(@RequestBody HWRequest req) {
         var hw = Homework.builder().title(req.getTitle()).description(req.getDescription())
                 .dueDate(req.getDueDate()).attachmentUrl(req.getAttachmentUrl()).build();
@@ -29,12 +31,14 @@ public class HomeworkController {
         if (req.getSubjectId() != null) subjectRepo.findById(req.getSubjectId()).ifPresent(hw::setSubject);
         return repo.save(hw);
     }
+    @PreAuthorize("@perm.has('homework:manage')")
     @PutMapping("/{id}") public Homework update(@PathVariable UUID id, @RequestBody HWRequest req) {
         var hw = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Homework not found"));
         hw.setTitle(req.getTitle()); hw.setDescription(req.getDescription());
         hw.setDueDate(req.getDueDate()); hw.setAttachmentUrl(req.getAttachmentUrl());
         return repo.save(hw);
     }
+    @PreAuthorize("@perm.has('homework:manage')")
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable UUID id) { repo.deleteById(id); }
 
     @Data public static class HWRequest {

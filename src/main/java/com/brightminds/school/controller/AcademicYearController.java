@@ -24,19 +24,19 @@ public class AcademicYearController {
     // GETs left open to all authenticated users: years/terms are referenced as dropdown
     // data by exams, fees, marks, meetings and report-cards across teaching/finance roles.
     @GetMapping public List<AcademicYear> listYears() { return yearRepo.findAll(); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('academic_years:manage')")
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public AcademicYear createYear(@RequestBody YearRequest req) {
         return yearRepo.save(AcademicYear.builder().name(req.getName()).startDate(req.getStartDate()).endDate(req.getEndDate()).isCurrent(req.isCurrent()).build()); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('academic_years:manage')")
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteYear(@PathVariable UUID id) { yearRepo.deleteById(id); }
 
     @GetMapping("/{yearId}/terms") public List<Term> listTerms(@PathVariable UUID yearId) { return termRepo.findByAcademicYearId(yearId); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('academic_years:manage')")
     @PostMapping("/{yearId}/terms") @ResponseStatus(HttpStatus.CREATED) public Term createTerm(@PathVariable UUID yearId, @RequestBody TermRequest req) {
         AcademicYear year = yearRepo.findById(yearId).orElseThrow(() -> new EntityNotFoundException("Year not found"));
         return termRepo.save(Term.builder().academicYear(year).name(req.getName()).startDate(req.getStartDate()).endDate(req.getEndDate()).isCurrent(req.isCurrent()).build()); }
     @GetMapping("/terms") public List<Term> allTerms() { return termRepo.findAll(); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('academic_years:manage')")
     @DeleteMapping("/terms/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteTerm(@PathVariable UUID id) { termRepo.deleteById(id); }
 
     @Data public static class YearRequest {

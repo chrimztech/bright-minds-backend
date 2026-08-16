@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/health") @RequiredArgsConstructor @Tag(name = "Health Records")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('health:manage')")
 public class HealthController {
     private final HealthRecordRepository repo;
     private final PupilRepository pupilRepo;

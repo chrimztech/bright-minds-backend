@@ -25,7 +25,7 @@ import java.util.UUID;
 @RequestMapping("/staff")
 @RequiredArgsConstructor
 @Tag(name = "Staff")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('staff:view')")
 public class StaffController {
 
     private final StaffService staffService;
@@ -57,21 +57,24 @@ public class StaffController {
     @GetMapping("/{id}")
     public Staff getById(@PathVariable UUID id) { return staffService.getById(id); }
 
+    @PreAuthorize("@perm.has('staff:manage')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Staff create(@Valid @RequestBody StaffRequest req) { return staffService.create(req); }
 
+    @PreAuthorize("@perm.has('staff:manage')")
     @PutMapping("/{id}")
     public Staff update(@PathVariable UUID id, @Valid @RequestBody StaffRequest req) {
         return staffService.update(id, req);
     }
 
+    @PreAuthorize("@perm.has('staff:manage')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { staffService.delete(id); }
 
+    @PreAuthorize("@perm.has('staff:manage')")
     @PostMapping("/{id}/account")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
     public Staff provisionAccount(@PathVariable UUID id, @RequestBody AccountRequest req) {
         return staffAccountService.provision(id, req.getTemporaryPassword());
     }

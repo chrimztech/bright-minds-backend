@@ -17,7 +17,7 @@ import java.util.UUID;
 @RequestMapping("/promotions")
 @RequiredArgsConstructor
 @Tag(name = "Pupil Promotions")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('promotions:manage')")
 public class PromotionController {
 
     private final PromotionService promotionService;

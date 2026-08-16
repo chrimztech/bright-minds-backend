@@ -7,6 +7,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -26,6 +27,7 @@ public class DocumentController {
         return repo.findAll();
     }
 
+    @PreAuthorize("@perm.has('documents:manage')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Document create(@RequestBody DocReq req) {
@@ -37,6 +39,7 @@ public class DocumentController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('documents:manage')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {

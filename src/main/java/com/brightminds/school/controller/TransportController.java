@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
@@ -21,29 +22,38 @@ public class TransportController {
     private final VehicleRepository vehicleRepo;
     private final PupilRepository pupilRepo;
 
+    @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/vehicles") public List<Vehicle> vehicles() { return vehicleRepo.findAll(); }
+    @PreAuthorize("@perm.has('transport:manage')")
     @PostMapping("/vehicles") @ResponseStatus(HttpStatus.CREATED) public Vehicle createVehicle(@RequestBody VehicleReq req) {
         return vehicleRepo.save(Vehicle.builder().regNo(req.getRegNo()).model(req.getModel()).capacity(req.getCapacity())
                 .driverName(req.getDriverName()).driverPhone(req.getDriverPhone()).notes(req.getNotes()).build()); }
+    @PreAuthorize("@perm.has('transport:manage')")
     @DeleteMapping("/vehicles/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteVehicle(@PathVariable UUID id) { vehicleRepo.deleteById(id); }
 
+    @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/routes") public List<TransportRoute> routes() { return routeRepo.findAll(); }
+    @PreAuthorize("@perm.has('transport:manage')")
     @PostMapping("/routes") @ResponseStatus(HttpStatus.CREATED) public TransportRoute createRoute(@RequestBody RouteReq req) {
         var route = TransportRoute.builder().name(req.getName()).pickupPoints(req.getPickupPoints()).fee(req.getFee()).build();
         if (req.getVehicleId() != null) vehicleRepo.findById(req.getVehicleId()).ifPresent(route::setVehicle);
         return routeRepo.save(route);
     }
+    @PreAuthorize("@perm.has('transport:manage')")
     @DeleteMapping("/routes/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteRoute(@PathVariable UUID id) { routeRepo.deleteById(id); }
 
+    @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/assignments") public List<TransportAssignment> assignments(@RequestParam(required = false) UUID routeId) {
         if (routeId != null) return assignRepo.findByRouteId(routeId);
         return assignRepo.findAll();
     }
+    @PreAuthorize("@perm.has('transport:manage')")
     @PostMapping("/assignments") @ResponseStatus(HttpStatus.CREATED) public TransportAssignment assign(@RequestBody AssignReq req) {
         var pupil = pupilRepo.findById(req.getPupilId()).orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
         var route = routeRepo.findById(req.getRouteId()).orElseThrow(() -> new EntityNotFoundException("Route not found"));
         return assignRepo.save(TransportAssignment.builder().pupil(pupil).route(route).pickupPoint(req.getPickupPoint()).build());
     }
+    @PreAuthorize("@perm.has('transport:manage')")
     @DeleteMapping("/assignments/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteAssign(@PathVariable UUID id) { assignRepo.deleteById(id); }
 
     @Data public static class VehicleReq { private String regNo; private String model; private Integer capacity; private String driverName; private String driverPhone; private String notes; }

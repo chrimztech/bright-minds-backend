@@ -1,0 +1,1 @@
+ALTER TABLE invoices ADD COLUMN late_fee_applied BOOLEAN NOT NULL DEFAULT FALSE;

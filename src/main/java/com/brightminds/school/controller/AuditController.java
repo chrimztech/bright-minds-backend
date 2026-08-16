@@ -15,7 +15,7 @@ import java.util.UUID;
 @RequestMapping("/admin/audit")
 @RequiredArgsConstructor
 @Tag(name = "Audit Logs")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER')")
+@PreAuthorize("@perm.has('audit:view')")
 public class AuditController {
 
     private final AuditLogRepository auditRepo;

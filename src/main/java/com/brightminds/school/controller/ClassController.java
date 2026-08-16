@@ -25,7 +25,7 @@ import java.util.UUID;
 @RequestMapping("/classes")
 @RequiredArgsConstructor
 @Tag(name = "Classes")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('classes:view')")
 public class ClassController {
 
     private final SchoolClassRepository classRepo;
@@ -49,13 +49,14 @@ public class ClassController {
         return classRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Class not found"));
     }
 
+    @PreAuthorize("@perm.has('classes:manage')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public SchoolClass create(@Valid @RequestBody ClassRequest req) {
         SchoolClass sc = SchoolClass.builder()
                 .name(req.getName())
                 .stream(req.getStream())
-                .levelOrder(req.getLevelOrder())
+                .levelOrder(req.getLevelOrder() != null ? req.getLevelOrder() : 1)
                 .capacity(req.getCapacity())
                 .build();
         if (req.getClassTeacherId() != null) {
@@ -64,19 +65,27 @@ public class ClassController {
         return classRepo.save(sc);
     }
 
+    // Not @Valid: the roster page's quick "Assign teacher" dropdown sends only
+    // classTeacherId, not the full class record, so every other field here is a
+    // partial-merge — applied only when present, never forced back to a default.
+    @PreAuthorize("@perm.has('classes:manage')")
     @PutMapping("/{id}")
-    public SchoolClass update(@PathVariable UUID id, @Valid @RequestBody ClassRequest req) {
+    public SchoolClass update(@PathVariable UUID id, @RequestBody ClassRequest req) {
         SchoolClass sc = classRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Class not found"));
-        sc.setName(req.getName());
-        sc.setStream(req.getStream());
-        sc.setLevelOrder(req.getLevelOrder());
-        sc.setCapacity(req.getCapacity());
-        if (req.getClassTeacherId() != null) {
-            staffRepo.findById(req.getClassTeacherId()).ifPresent(sc::setClassTeacher);
-        }
+        if (req.getName() != null) sc.setName(req.getName());
+        if (req.getStream() != null) sc.setStream(req.getStream());
+        if (req.getLevelOrder() != null) sc.setLevelOrder(req.getLevelOrder());
+        if (req.getCapacity() != null) sc.setCapacity(req.getCapacity());
+        // Both callers (the full class-edit form and the roster's quick reassign dropdown)
+        // always send this key explicitly — a real id to set it, or null to clear it — so
+        // unlike the fields above, there's no "omitted" case to preserve here.
+        sc.setClassTeacher(req.getClassTeacherId() != null
+                ? staffRepo.findById(req.getClassTeacherId()).orElse(null)
+                : null);
         return classRepo.save(sc);
     }
 
+    @PreAuthorize("@perm.has('classes:manage')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
@@ -88,7 +97,9 @@ public class ClassController {
         @NotBlank
         private String name;
         private String stream;
-        private int levelOrder = 1;
+        // Boxed (not a primitive with a default) so a partial update payload that omits
+        // this field is distinguishable from one that explicitly sets it — see update().
+        private Integer levelOrder;
         private Integer capacity;
         private UUID classTeacherId;
     }

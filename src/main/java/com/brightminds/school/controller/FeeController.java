@@ -24,7 +24,7 @@ import java.util.UUID;
 @RequestMapping("/fees")
 @RequiredArgsConstructor
 @Tag(name = "Fees & Payments")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','HEAD_TEACHER','ADMIN','ACCOUNTANT')")
+@PreAuthorize("@perm.has('fees:view')")
 public class FeeController {
 
     private final FeeItemRepository feeItemRepo;
@@ -39,6 +39,7 @@ public class FeeController {
     @GetMapping("/items")
     public List<FeeItem> listItems() { return feeItemRepo.findAll(); }
 
+    @PreAuthorize("@perm.has('fees:configure')")
     @PostMapping("/items")
     @ResponseStatus(HttpStatus.CREATED)
     public FeeItem createItem(@RequestBody FeeItemRequest req) {
@@ -53,6 +54,7 @@ public class FeeController {
         return feeItemRepo.save(item);
     }
 
+    @PreAuthorize("@perm.has('fees:configure')")
     @PutMapping("/items/{id}")
     public FeeItem updateItem(@PathVariable UUID id, @RequestBody FeeItemRequest req) {
         FeeItem item = feeItemRepo.findById(id)
@@ -63,6 +65,7 @@ public class FeeController {
         return feeItemRepo.save(item);
     }
 
+    @PreAuthorize("@perm.has('fees:configure')")
     @DeleteMapping("/items/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteItem(@PathVariable UUID id) { feeItemRepo.deleteById(id); }
@@ -87,16 +90,50 @@ public class FeeController {
         return invoiceRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
     }
 
+    @PreAuthorize("@perm.has('fees:create')")
     @PostMapping("/invoices")
     @ResponseStatus(HttpStatus.CREATED)
     public Invoice createInvoice(@RequestBody InvoiceRequest req) {
         return saveInvoice(req);
     }
 
+    @PreAuthorize("@perm.has('fees:create')")
     @PostMapping("/invoices/bulk")
     @ResponseStatus(HttpStatus.CREATED)
     public List<Invoice> bulkCreateInvoices(@RequestBody List<InvoiceRequest> reqs) {
         return reqs.stream().map(this::saveInvoice).toList();
+    }
+
+    // Runs daily at 01:00 — see also POST /fees/invoices/apply-late-fees for an on-demand trigger.
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 1 * * *")
+    public void scheduledLateFees() { applyLateFees(); }
+
+    @PreAuthorize("@perm.has('fees:create')")
+    @PostMapping("/invoices/apply-late-fees")
+    public List<Invoice> applyLateFees() {
+        List<Invoice> overdue = invoiceRepo.findByDueDateBeforeAndStatusInAndLateFeeAppliedFalse(
+                LocalDate.now(), List.of(InvoiceStatus.UNPAID, InvoiceStatus.PARTIAL));
+        List<Invoice> created = new java.util.ArrayList<>();
+        for (Invoice original : overdue) {
+            Invoice lateFee = Invoice.builder()
+                    .invoiceNo(nextInvoiceNo())
+                    .pupil(original.getPupil())
+                    .total(LATE_FEE_AMOUNT)
+                    .description("Administrative late payment fee — overdue invoice " + original.getInvoiceNo())
+                    .dueDate(LocalDate.now())
+                    .build();
+            created.add(invoiceRepo.save(lateFee));
+            original.setLateFeeApplied(true);
+            invoiceRepo.save(original);
+        }
+        return created;
+    }
+
+    private static final BigDecimal LATE_FEE_AMOUNT = BigDecimal.valueOf(35);
+
+    private String nextInvoiceNo() {
+        return "INV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
+                + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
     }
 
     private Invoice saveInvoice(InvoiceRequest req) {
@@ -104,8 +141,7 @@ public class FeeController {
                 .orElseThrow(() -> new EntityNotFoundException("Pupil not found: " + req.getPupilId()));
         String invNo = req.getInvoiceNo() != null && !req.getInvoiceNo().isBlank()
                 ? req.getInvoiceNo()
-                : "INV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
-                  + "-" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+                : nextInvoiceNo();
         Invoice inv = Invoice.builder()
                 .invoiceNo(invNo)
                 .pupil(pupil)
@@ -114,6 +150,7 @@ public class FeeController {
                 .dueDate(req.getDueDate())
                 .build();
         if (req.getTermId() != null) termRepo.findById(req.getTermId()).ifPresent(inv::setTerm);
+        if (req.getFeeItemId() != null) feeItemRepo.findById(req.getFeeItemId()).ifPresent(inv::setFeeItem);
         return invoiceRepo.save(inv);
     }
 
@@ -137,6 +174,7 @@ public class FeeController {
         return paymentRepo.findByStatusOrderByCreatedAtDesc(PaymentStatus.PENDING);
     }
 
+    @PreAuthorize("@perm.has('fees:collect')")
     @PostMapping("/payments")
     @ResponseStatus(HttpStatus.CREATED)
     public Payment createPayment(@RequestBody PaymentRequest req) {
@@ -167,6 +205,7 @@ public class FeeController {
         return paymentRepo.save(payment);
     }
 
+    @PreAuthorize("@perm.has('fees:collect')")
     @PatchMapping("/payments/{id}/confirm")
     public Payment confirmPayment(@PathVariable UUID id) {
         Payment payment = paymentRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payment not found"));
@@ -178,6 +217,7 @@ public class FeeController {
         return paymentRepo.save(payment);
     }
 
+    @PreAuthorize("@perm.has('fees:collect')")
     @PatchMapping("/payments/{id}/reject")
     public Payment rejectPayment(@PathVariable UUID id, @RequestBody(required = false) RejectRequest req) {
         Payment payment = paymentRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payment not found"));
@@ -236,7 +276,7 @@ public class FeeController {
 
     @Data public static class InvoiceRequest {
         private String invoiceNo;
-        private UUID pupilId, termId;
+        private UUID pupilId, termId, feeItemId;
         private BigDecimal total;
         private String description;
         private LocalDate dueDate;

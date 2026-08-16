@@ -3,7 +3,6 @@ package com.brightminds.school.service;
 import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.Guardian;
 import com.brightminds.school.entity.UserRole;
-import com.brightminds.school.entity.enums.AppRole;
 import com.brightminds.school.repository.AppUserRepository;
 import com.brightminds.school.repository.GuardianRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -86,9 +85,9 @@ public class GuardianAccountService {
         }
 
         boolean hasParentRole = account.getRoles().stream()
-                .anyMatch(role -> role.getRole() == AppRole.PARENT);
+                .anyMatch(role -> "PARENT".equals(role.getRole()));
         if (!hasParentRole) {
-            account.getRoles().add(UserRole.builder().user(account).role(AppRole.PARENT).build());
+            account.getRoles().add(UserRole.builder().user(account).role("PARENT").build());
         }
         AppUser savedAccount = userRepo.save(account);
         guardian.setUserId(savedAccount.getId());

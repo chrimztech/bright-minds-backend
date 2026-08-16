@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequestMapping("/leave")
 @RequiredArgsConstructor
 @Tag(name = "Leave Management")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('leave:manage')")
 public class LeaveController {
 
     private final LeaveRequestRepository leaveRepo;

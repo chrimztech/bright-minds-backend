@@ -3,6 +3,7 @@ package com.brightminds.school.repository;
 import com.brightminds.school.entity.Invoice;
 import com.brightminds.school.entity.enums.InvoiceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,4 +17,5 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     Optional<Invoice> findByInvoiceNo(String invoiceNo);
     boolean existsByInvoiceNo(String invoiceNo);
     boolean existsByPupilIdAndFeeItemId(UUID pupilId, UUID feeItemId);
+    List<Invoice> findByDueDateBeforeAndStatusInAndLateFeeAppliedFalse(LocalDate date, List<InvoiceStatus> statuses);
 }

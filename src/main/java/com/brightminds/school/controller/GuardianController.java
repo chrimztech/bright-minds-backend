@@ -38,7 +38,7 @@ public class GuardianController {
     private final GuardianAccountService accountService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public List<Guardian> list() { return repo.findAll(); }
 
     @GetMapping("/me")
@@ -164,21 +164,21 @@ public class GuardianController {
     }
 
     @GetMapping("/pupil/{pupilId}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public List<Guardian> byPupil(@PathVariable UUID pupilId) { return repo.findByPupilId(pupilId); }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public Guardian get(@PathVariable UUID id) { return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Guardian not found")); }
 
     @GetMapping("/{id}/pupils")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public List<Pupil> pupilsFor(@PathVariable UUID id) {
         return gpRepo.findByGuardianId(id).stream().map(GuardianPupil::getPupil).toList();
     }
 
     @PostMapping @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public Guardian create(@RequestBody GuardianRequest req) {
         Guardian guardian = Guardian.builder().fullName(req.getFullName()).relationship(req.getRelationship())
                 .phone(req.getPhone()).email(req.getEmail()).address(req.getAddress())
@@ -187,7 +187,7 @@ public class GuardianController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public Guardian update(@PathVariable UUID id, @RequestBody GuardianRequest req) {
         var g = get(id); g.setFullName(req.getFullName()); g.setRelationship(req.getRelationship());
         g.setPhone(req.getPhone()); g.setEmail(req.getEmail()); g.setAddress(req.getAddress());
@@ -196,18 +196,18 @@ public class GuardianController {
     }
 
     @PostMapping("/{id}/account")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public Guardian provisionAccount(@PathVariable UUID id, @RequestBody ParentAccountRequest req) {
         return accountService.provision(id, req.getTemporaryPassword());
     }
 
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public void delete(@PathVariable UUID id) { repo.deleteById(id); }
 
     @PostMapping("/{guardianId}/pupils/{pupilId}")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public GuardianPupil link(@PathVariable UUID guardianId, @PathVariable UUID pupilId,
                                @RequestParam(defaultValue = "false") boolean isPrimary) {
         var existing = gpRepo.findByGuardianIdAndPupilId(guardianId, pupilId);
@@ -217,7 +217,7 @@ public class GuardianController {
         return gpRepo.save(GuardianPupil.builder().guardian(g).pupil(p).isPrimary(isPrimary).build());
     }
     @DeleteMapping("/{guardianId}/pupils/{pupilId}") @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('guardians:manage')")
     public void unlink(@PathVariable UUID guardianId, @PathVariable UUID pupilId) { gpRepo.deleteByPupilIdAndGuardianId(pupilId, guardianId); }
 
     @Data public static class GuardianRequest {

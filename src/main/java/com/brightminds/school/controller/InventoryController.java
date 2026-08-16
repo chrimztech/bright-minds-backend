@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/inventory") @RequiredArgsConstructor @Tag(name = "Inventory")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('inventory:manage')")
 public class InventoryController {
     private final InventoryItemRepository itemRepo;
     private final InventoryTxnRepository txnRepo;

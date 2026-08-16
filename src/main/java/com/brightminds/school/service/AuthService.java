@@ -5,7 +5,6 @@ import com.brightminds.school.dto.AuthResponse;
 import com.brightminds.school.dto.RegisterRequest;
 import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.UserRole;
-import com.brightminds.school.entity.enums.AppRole;
 import com.brightminds.school.repository.AppUserRepository;
 import com.brightminds.school.security.CustomUserDetails;
 import com.brightminds.school.security.JwtUtil;
@@ -43,9 +42,9 @@ public class AuthService {
                 .phone(req.getPhone())
                 .build();
 
-        List<AppRole> roles = req.getRoles() != null && !req.getRoles().isEmpty()
+        List<String> roles = req.getRoles() != null && !req.getRoles().isEmpty()
                 ? req.getRoles()
-                : List.of(AppRole.ADMIN);
+                : List.of("ADMIN");
 
         List<UserRole> userRoles = roles.stream()
                 .map(r -> UserRole.builder().user(user).role(r).build())

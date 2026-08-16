@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequestMapping("/pupils")
 @RequiredArgsConstructor
 @Tag(name = "Pupils")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('pupils:view')")
 public class PupilController {
 
     private final PupilService pupilService;
@@ -48,17 +48,20 @@ public class PupilController {
         return pupilService.getByClass(classId);
     }
 
+    @PreAuthorize("@perm.has('pupils:create')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Pupil create(@Valid @RequestBody PupilRequest req) {
         return pupilService.create(req);
     }
 
+    @PreAuthorize("@perm.has('pupils:edit')")
     @PutMapping("/{id}")
     public Pupil update(@PathVariable UUID id, @Valid @RequestBody PupilRequest req) {
         return pupilService.update(id, req);
     }
 
+    @PreAuthorize("@perm.has('pupils:delete')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {

@@ -3,7 +3,6 @@ package com.brightminds.school.service;
 import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.Staff;
 import com.brightminds.school.entity.UserRole;
-import com.brightminds.school.entity.enums.AppRole;
 import com.brightminds.school.repository.AppUserRepository;
 import com.brightminds.school.repository.StaffRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -90,8 +89,8 @@ public class StaffAccountService {
         // "My classes" / their pupils. Non-teaching staff get an account with no role yet —
         // an admin assigns the right role (e.g. ACCOUNTANT, LIBRARIAN) under Users & Roles.
         if (staff.isTeacher()) {
-            boolean hasTeacherRole = account.getRoles().stream().anyMatch(r -> r.getRole() == AppRole.TEACHER);
-            if (!hasTeacherRole) account.getRoles().add(UserRole.builder().user(account).role(AppRole.TEACHER).build());
+            boolean hasTeacherRole = account.getRoles().stream().anyMatch(r -> "TEACHER".equals(r.getRole()));
+            if (!hasTeacherRole) account.getRoles().add(UserRole.builder().user(account).role("TEACHER").build());
         }
         AppUser savedAccount = userRepo.save(account);
         staff.setUserId(savedAccount.getId());

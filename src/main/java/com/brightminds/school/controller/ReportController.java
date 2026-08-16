@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 @RequestMapping("/reports")
 @RequiredArgsConstructor
 @Tag(name = "Reports")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+@PreAuthorize("@perm.has('reports:view')")
 public class ReportController {
 
     private final PupilRepository pupils;

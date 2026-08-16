@@ -1,6 +1,5 @@
 package com.brightminds.school.entity;
 
-import com.brightminds.school.entity.enums.AppRole;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -21,9 +20,12 @@ public class UserRole {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
-    @Enumerated(EnumType.STRING)
+    // Plain string, not the AppRole enum: the roles table (see Role.java) holds both
+    // the 13 built-in system roles and any admin-created custom role, and a user can be
+    // assigned either — the DB column has always been VARCHAR (see V6 migration), so this
+    // was never actually constrained to the closed enum set at the schema level.
     @Column(nullable = false)
-    private AppRole role;
+    private String role;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

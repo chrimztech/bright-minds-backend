@@ -19,13 +19,13 @@ public class SubjectController {
     // by exams, marks, homework and timetable pages across teaching/admin roles.
     @GetMapping public List<Subject> list() { return repo.findAll(); }
     @GetMapping("/{id}") public Subject get(@PathVariable UUID id) { return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Not found")); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('subjects:manage')")
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public Subject create(@RequestBody SubjectReq req) {
         return repo.save(Subject.builder().name(req.getName()).code(req.getCode()).build()); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('subjects:manage')")
     @PutMapping("/{id}") public Subject update(@PathVariable UUID id, @RequestBody SubjectReq req) {
         Subject s = get(id); s.setName(req.getName()); s.setCode(req.getCode()); return repo.save(s); }
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('subjects:manage')")
     @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable UUID id) { repo.deleteById(id); }
     @Data public static class SubjectReq { private String name; private String code; }
 }

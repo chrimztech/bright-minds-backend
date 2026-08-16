@@ -19,7 +19,7 @@ import java.util.UUID;
 @RequestMapping("/report-cards/remarks")
 @RequiredArgsConstructor
 @Tag(name = "Report Card Remarks")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('report_cards:view')")
 public class ReportCardController {
 
     private final ReportCardRemarkRepository remarkRepo;

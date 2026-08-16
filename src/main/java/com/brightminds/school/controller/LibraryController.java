@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -41,6 +42,7 @@ public class LibraryController {
         return bookRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Book not found"));
     }
 
+    @PreAuthorize("@perm.has('library:manage')")
     @PostMapping("/books")
     @ResponseStatus(HttpStatus.CREATED)
     public LibraryBook createBook(@RequestBody BookRequest req) {
@@ -55,6 +57,7 @@ public class LibraryController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('library:manage')")
     @PutMapping("/books/{id}")
     public LibraryBook updateBook(@PathVariable UUID id, @RequestBody BookRequest req) {
         LibraryBook b = getBook(id);
@@ -67,6 +70,7 @@ public class LibraryController {
         return bookRepo.save(b);
     }
 
+    @PreAuthorize("@perm.has('library:manage')")
     @DeleteMapping("/books/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBook(@PathVariable UUID id) { bookRepo.deleteById(id); }
@@ -77,6 +81,7 @@ public class LibraryController {
         return loanRepo.findAll();
     }
 
+    @PreAuthorize("@perm.has('library:manage')")
     @PostMapping("/loans")
     @ResponseStatus(HttpStatus.CREATED)
     public LibraryLoan createLoan(@RequestBody LoanRequest req) {
@@ -95,6 +100,7 @@ public class LibraryController {
         return loanRepo.save(loan);
     }
 
+    @PreAuthorize("@perm.has('library:manage')")
     @PatchMapping("/loans/{id}/return")
     public LibraryLoan returnBook(@PathVariable UUID id) {
         LibraryLoan loan = loanRepo.findById(id)

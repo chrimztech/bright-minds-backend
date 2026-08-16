@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/discipline") @RequiredArgsConstructor @Tag(name = "Discipline")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('discipline:manage')")
 public class DisciplineController {
     private final DisciplineRecordRepository repo;
     private final PupilRepository pupilRepo;

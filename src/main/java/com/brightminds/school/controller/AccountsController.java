@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController @RequestMapping("/accounts") @RequiredArgsConstructor @Tag(name = "Accounts / Expenses")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','HEAD_TEACHER','ADMIN','ACCOUNTANT')")
+@PreAuthorize("@perm.has('accounts:manage')")
 public class AccountsController {
     private final ExpenseRepository repo;
 

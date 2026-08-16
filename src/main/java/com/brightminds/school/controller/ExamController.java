@@ -22,7 +22,7 @@ import java.util.UUID;
 @RequestMapping("/exams")
 @RequiredArgsConstructor
 @Tag(name = "Exams & Marks")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
+@PreAuthorize("@perm.has('exams:manage')")
 public class ExamController {
 
     private final ExamRepository examRepo;

@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequestMapping("/admin/roles")
 @RequiredArgsConstructor
 @Tag(name = "Roles & Permissions")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN')")
+@PreAuthorize("@perm.has('roles:manage')")
 public class RoleController {
 
     private final RoleRepository roleRepo;

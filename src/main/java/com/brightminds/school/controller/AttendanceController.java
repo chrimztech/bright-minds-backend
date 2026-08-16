@@ -24,13 +24,13 @@ import java.util.UUID;
 @RequestMapping("/attendance")
 @RequiredArgsConstructor
 @Tag(name = "Attendance")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD','TEACHER','CLASS_TEACHER')")
 public class AttendanceController {
 
     private final AttendanceRepository attendanceRepo;
     private final PupilRepository pupilRepo;
     private final SchoolClassRepository classRepo;
 
+    @PreAuthorize("@perm.has('attendance:view')")
     @GetMapping
     public List<Attendance> list(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
@@ -39,6 +39,7 @@ public class AttendanceController {
         return attendanceRepo.findByDate(date);
     }
 
+    @PreAuthorize("@perm.has('attendance:view')")
     @GetMapping("/range")
     public List<Attendance> range(
             @RequestParam UUID classId,
@@ -47,6 +48,7 @@ public class AttendanceController {
         return attendanceRepo.findBySchoolClassIdAndDateBetweenOrderByDateAsc(classId, from, to);
     }
 
+    @PreAuthorize("@perm.has('attendance:view')")
     @GetMapping("/pupil/{pupilId}")
     public List<Attendance> byPupil(
             @PathVariable UUID pupilId,
@@ -55,12 +57,14 @@ public class AttendanceController {
         return attendanceRepo.findByPupilIdAndDateBetween(pupilId, from, to);
     }
 
+    @PreAuthorize("@perm.has('attendance:mark')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Attendance create(@RequestBody AttendanceRequest req) {
         return upsert(req);
     }
 
+    @PreAuthorize("@perm.has('attendance:mark')")
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.CREATED)
     public List<Attendance> bulkCreate(@RequestBody List<AttendanceRequest> records) {
@@ -83,6 +87,7 @@ public class AttendanceController {
         return attendanceRepo.save(att);
     }
 
+    @PreAuthorize("@perm.has('attendance:mark')")
     @PutMapping("/{id}")
     public Attendance update(@PathVariable UUID id, @RequestBody AttendanceRequest req) {
         Attendance att = attendanceRepo.findById(id)

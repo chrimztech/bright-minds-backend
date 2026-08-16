@@ -55,6 +55,12 @@ public class Invoice {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    // Set once a late-payment administrative fee invoice has been generated for this
+    // invoice, so the daily sweep never double-charges the same overdue invoice.
+    @Column(name = "late_fee_applied")
+    @Builder.Default
+    private boolean lateFeeApplied = false;
+
     private String description;
 
     @CreationTimestamp

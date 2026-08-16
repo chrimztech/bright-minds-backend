@@ -9,6 +9,7 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.List;
@@ -20,14 +21,20 @@ public class EventController {
     private final SchoolClassRepository classRepo;
 
     @GetMapping public List<Event> list() { return repo.findAllByOrderByStartsAtDesc(); }
-    @PostMapping @ResponseStatus(HttpStatus.CREATED) public Event create(@RequestBody EventRequest req) {
+
+    @PostMapping @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("@perm.has('events:manage')")
+    public Event create(@RequestBody EventRequest req) {
         var ev = Event.builder().title(req.getTitle()).description(req.getDescription())
                 .startsAt(req.getStartsAt()).endsAt(req.getEndsAt()).location(req.getLocation())
                 .audience(req.getAudience() != null ? req.getAudience() : EventAudience.ALL).build();
         if (req.getClassId() != null) classRepo.findById(req.getClassId()).ifPresent(ev::setSchoolClass);
         return repo.save(ev);
     }
-    @PutMapping("/{id}") public Event update(@PathVariable UUID id, @RequestBody EventRequest req) {
+
+    @PutMapping("/{id}")
+    @PreAuthorize("@perm.has('events:manage')")
+    public Event update(@PathVariable UUID id, @RequestBody EventRequest req) {
         var ev = repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Event not found"));
         ev.setTitle(req.getTitle()); ev.setDescription(req.getDescription());
         ev.setStartsAt(req.getStartsAt()); ev.setEndsAt(req.getEndsAt());
@@ -35,7 +42,10 @@ public class EventController {
         if (req.getAudience() != null) ev.setAudience(req.getAudience());
         return repo.save(ev);
     }
-    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable UUID id) { repo.deleteById(id); }
+
+    @DeleteMapping("/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("@perm.has('events:manage')")
+    public void delete(@PathVariable UUID id) { repo.deleteById(id); }
 
     @Data public static class EventRequest {
         private String title; private String description; private Instant startsAt; private Instant endsAt;

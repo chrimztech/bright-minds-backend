@@ -2,8 +2,8 @@ package com.brightminds.school.controller;
 
 import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.UserRole;
-import com.brightminds.school.entity.enums.AppRole;
 import com.brightminds.school.repository.AppUserRepository;
+import com.brightminds.school.repository.RoleRepository;
 import com.brightminds.school.service.AuditService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -14,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -22,10 +21,11 @@ import java.util.stream.Collectors;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 @Tag(name = "User Management")
-@PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ADMIN', 'HEAD_TEACHER')")
+@PreAuthorize("@perm.has('users:manage')")
 public class UserManagementController {
 
     private final AppUserRepository userRepo;
+    private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
     private final AuditService audit;
 
@@ -46,11 +46,11 @@ public class UserManagementController {
                 .fullName(req.getFullName())
                 .mustChangePassword(true)
                 .build();
-        List<AppRole> roles = req.getRoles() != null
-                ? req.getRoles().stream().map(AppRole::valueOf).collect(Collectors.toList())
-                : List.of(AppRole.TEACHER);
+        List<String> roles = req.getRoles() != null && !req.getRoles().isEmpty()
+                ? req.getRoles()
+                : List.of("TEACHER");
         List<UserRole> userRoles = roles.stream()
-                .map(r -> UserRole.builder().user(user).role(r).build())
+                .map(r -> UserRole.builder().user(user).role(resolveRoleName(r)).build())
                 .collect(Collectors.toList());
         user.setRoles(userRoles);
         AppUser saved = userRepo.save(user);
@@ -63,11 +63,26 @@ public class UserManagementController {
         AppUser user = userRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.getRoles().clear();
         if (req.getRoles() != null) {
-            req.getRoles().forEach(r -> user.getRoles().add(UserRole.builder().user(user).role(AppRole.valueOf(r)).build()));
+            for (String r : req.getRoles()) {
+                user.getRoles().add(UserRole.builder().user(user).role(resolveRoleName(r)).build());
+            }
         }
         UserDto dto = toDto(userRepo.save(user));
         audit.log("UPDATE_ROLES", "AppUser", id.toString(), null);
         return dto;
+    }
+
+    // Any role — system or admin-created custom — can be assigned to a user as long as
+    // it exists in the roles table; that table is what access checks now consult (see
+    // PermissionService), so a custom role like "MANAGER" gets real access once it has
+    // permissions configured, instead of failing to assign at all.
+    private String resolveRoleName(String requested) {
+        String normalized = requested.toUpperCase().trim();
+        if (!roleRepo.existsByName(normalized)) {
+            throw new IllegalArgumentException("\"" + requested + "\" is not a known role. " +
+                    "Create it first under Users & Roles → Roles & Permissions.");
+        }
+        return normalized;
     }
 
     @PostMapping("/{id}/reset-password")
@@ -91,7 +106,7 @@ public class UserManagementController {
         dto.setEmail(u.getEmail());
         dto.setFullName(u.getFullName());
         dto.setCreatedAt(u.getCreatedAt() != null ? u.getCreatedAt().toString() : null);
-        dto.setRoles(u.getRoles().stream().map(r -> r.getRole().name()).collect(Collectors.toList()));
+        dto.setRoles(u.getRoles().stream().map(UserRole::getRole).collect(Collectors.toList()));
         dto.setMustChangePassword(u.isMustChangePassword());
         return dto;
     }

@@ -20,6 +20,9 @@
         <jjwt.version>0.11.5</jjwt.version>
         <springdoc.version>2.7.0</springdoc.version>
         <lombok.version>1.18.38</lombok.version>
+        <!-- Without this, javac falls back to the platform default charset (Cp1252 on
+             Windows), which silently corrupts any non-ASCII character literal in source. -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>

@@ -221,6 +221,7 @@ com\brightminds\school\entity\Mark.class
 com\brightminds\school\config\DataInitializer.class
 com\brightminds\school\entity\TeacherSubject$TeacherSubjectBuilder.class
 com\brightminds\school\dto\PromotionDto$Request.class
+com\brightminds\school\service\PermissionService.class
 com\brightminds\school\entity\InventoryTxn.class
 com\brightminds\school\entity\Role$RoleBuilder.class
 com\brightminds\school\dto\ParentPortalDto$TeacherInfo.class

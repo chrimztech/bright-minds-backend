@@ -27,7 +27,7 @@ public class SettingsController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN','ADMIN','HEAD_TEACHER','DEPUTY_HEAD')")
+    @PreAuthorize("@perm.has('settings:edit')")
     public SchoolSetting update(@RequestBody SettingsRequest req) {
         SchoolSetting s = get();
         if (req.name != null) s.setName(req.name);
