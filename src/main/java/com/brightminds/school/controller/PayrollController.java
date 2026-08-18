@@ -6,6 +6,7 @@ import com.brightminds.school.entity.enums.PayrollStatus;
 import com.brightminds.school.repository.PayrollPeriodRepository;
 import com.brightminds.school.repository.PayslipRepository;
 import com.brightminds.school.repository.StaffRepository;
+import com.brightminds.school.service.AuditService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
@@ -29,6 +30,7 @@ public class PayrollController {
     private final PayrollPeriodRepository periodRepo;
     private final PayslipRepository payslipRepo;
     private final StaffRepository staffRepo;
+    private final AuditService audit;
 
     @GetMapping("/periods")
     public List<PayrollPeriod> listPeriods() { return periodRepo.findAllByOrderByPeriodStartDesc(); }
@@ -79,6 +81,30 @@ public class PayrollController {
                 .deductions(req.getDeductions()).tax(req.getTax())
                 .netPay(net).notes(req.getNotes())
                 .build());
+    }
+
+    @PutMapping("/payslips/{id}")
+    public Payslip updatePayslip(@PathVariable UUID id, @RequestBody PayslipRequest req) {
+        Payslip p = payslipRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payslip not found"));
+        BigDecimal oldNet = p.getNetPay();
+        if (req.getBasic() != null) p.setBasic(req.getBasic());
+        if (req.getAllowances() != null) p.setAllowances(req.getAllowances());
+        if (req.getDeductions() != null) p.setDeductions(req.getDeductions());
+        if (req.getTax() != null) p.setTax(req.getTax());
+        if (req.getNotes() != null) p.setNotes(req.getNotes());
+        p.setNetPay(p.getBasic().add(p.getAllowances()).subtract(p.getDeductions()).subtract(p.getTax()));
+        audit.log("CORRECT_PAYSLIP", "Payslip", id.toString(),
+                "net pay " + oldNet + " -> " + p.getNetPay() + " (staff " + p.getStaff().getFullName() + ")");
+        return payslipRepo.save(p);
+    }
+
+    @DeleteMapping("/payslips/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePayslip(@PathVariable UUID id) {
+        Payslip p = payslipRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payslip not found"));
+        audit.log("DELETE_PAYSLIP", "Payslip", id.toString(),
+                "net pay " + p.getNetPay() + " (staff " + p.getStaff().getFullName() + ")");
+        payslipRepo.deleteById(id);
     }
 
     @Data public static class PeriodRequest {

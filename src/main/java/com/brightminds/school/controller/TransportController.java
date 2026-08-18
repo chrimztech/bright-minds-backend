@@ -4,15 +4,18 @@ import com.brightminds.school.entity.TransportAssignment;
 import com.brightminds.school.entity.TransportRoute;
 import com.brightminds.school.entity.Vehicle;
 import com.brightminds.school.repository.*;
+import com.brightminds.school.service.ClassScopeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController @RequestMapping("/transport") @RequiredArgsConstructor @Tag(name = "Transport")
@@ -21,6 +24,7 @@ public class TransportController {
     private final TransportAssignmentRepository assignRepo;
     private final VehicleRepository vehicleRepo;
     private final PupilRepository pupilRepo;
+    private final ClassScopeService scopeService;
 
     @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/vehicles") public List<Vehicle> vehicles() { return vehicleRepo.findAll(); }
@@ -43,18 +47,25 @@ public class TransportController {
     @DeleteMapping("/routes/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteRoute(@PathVariable UUID id) { routeRepo.deleteById(id); }
 
     @PreAuthorize("@perm.has('transport:view')")
-    @GetMapping("/assignments") public List<TransportAssignment> assignments(@RequestParam(required = false) UUID routeId) {
-        if (routeId != null) return assignRepo.findByRouteId(routeId);
-        return assignRepo.findAll();
+    @GetMapping("/assignments") public List<TransportAssignment> assignments(@RequestParam(required = false) UUID routeId, Authentication auth) {
+        List<TransportAssignment> result = routeId != null ? assignRepo.findByRouteId(routeId) : assignRepo.findAll();
+        Set<UUID> scope = scopeService.restrictedClassIds(auth);
+        if (scope == null) return result;
+        return result.stream().filter(a -> a.getPupil().getSchoolClass() != null && scope.contains(a.getPupil().getSchoolClass().getId())).toList();
     }
     @PreAuthorize("@perm.has('transport:manage')")
-    @PostMapping("/assignments") @ResponseStatus(HttpStatus.CREATED) public TransportAssignment assign(@RequestBody AssignReq req) {
+    @PostMapping("/assignments") @ResponseStatus(HttpStatus.CREATED) public TransportAssignment assign(@RequestBody AssignReq req, Authentication auth) {
         var pupil = pupilRepo.findById(req.getPupilId()).orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
+        scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
         var route = routeRepo.findById(req.getRouteId()).orElseThrow(() -> new EntityNotFoundException("Route not found"));
         return assignRepo.save(TransportAssignment.builder().pupil(pupil).route(route).pickupPoint(req.getPickupPoint()).build());
     }
     @PreAuthorize("@perm.has('transport:manage')")
-    @DeleteMapping("/assignments/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteAssign(@PathVariable UUID id) { assignRepo.deleteById(id); }
+    @DeleteMapping("/assignments/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteAssign(@PathVariable UUID id, Authentication auth) {
+        TransportAssignment a = assignRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Assignment not found"));
+        scopeService.assertInScope(scopeService.restrictedClassIds(auth), a.getPupil().getSchoolClass() != null ? a.getPupil().getSchoolClass().getId() : null);
+        assignRepo.deleteById(id);
+    }
 
     @Data public static class VehicleReq { private String regNo; private String model; private Integer capacity; private String driverName; private String driverPhone; private String notes; }
     @Data public static class RouteReq { private String name; private String pickupPoints; private BigDecimal fee; private UUID vehicleId; }

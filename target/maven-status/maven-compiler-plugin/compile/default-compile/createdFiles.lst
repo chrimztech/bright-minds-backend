@@ -8,6 +8,7 @@ com\brightminds\school\service\DashboardService.class
 com\brightminds\school\entity\Message.class
 com\brightminds\school\entity\CanteenSale.class
 com\brightminds\school\repository\PaymentRepository.class
+com\brightminds\school\controller\FileUploadController$UploadResponse.class
 com\brightminds\school\security\CustomUserDetails.class
 com\brightminds\school\entity\enums\PaymentMethod.class
 com\brightminds\school\repository\PupilEnrollmentRepository.class
@@ -90,6 +91,7 @@ com\brightminds\school\controller\RoleController$RoleRequest.class
 com\brightminds\school\entity\Exam.class
 com\brightminds\school\entity\LibraryLoan$LibraryLoanBuilder.class
 com\brightminds\school\repository\SupplierRepository.class
+com\brightminds\school\service\ClassScopeService.class
 com\brightminds\school\controller\AccountsController.class
 com\brightminds\school\controller\AccountsController$ExpenseReq.class
 com\brightminds\school\repository\AuditLogRepository.class
@@ -149,6 +151,7 @@ com\brightminds\school\dto\ParentPortalDto$ReportCard$ReportCardBuilder.class
 com\brightminds\school\dto\DashboardDto$DashboardDtoBuilder.class
 com\brightminds\school\dto\ParentPortalDto$GuardianInfo.class
 com\brightminds\school\config\CorsConfig.class
+com\brightminds\school\config\JacksonConfig$1.class
 com\brightminds\school\repository\PayrollPeriodRepository.class
 com\brightminds\school\dto\ParentPortalDto$ClassInfo$ClassInfoBuilder.class
 com\brightminds\school\entity\Guardian$GuardianBuilder.class
@@ -307,6 +310,7 @@ com\brightminds\school\repository\CanteenSaleRepository.class
 com\brightminds\school\controller\EventController$EventRequest.class
 com\brightminds\school\controller\AuditController.class
 com\brightminds\school\dto\DashboardDto$AnnouncementSummary.class
+com\brightminds\school\controller\FileUploadController.class
 com\brightminds\school\entity\CanteenSubscription.class
 com\brightminds\school\repository\LeaveRequestRepository.class
 com\brightminds\school\controller\AnnouncementController.class

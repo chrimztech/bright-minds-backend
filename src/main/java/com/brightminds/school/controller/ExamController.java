@@ -6,16 +6,19 @@ import com.brightminds.school.entity.Pupil;
 import com.brightminds.school.entity.Subject;
 import com.brightminds.school.entity.enums.AssessmentType;
 import com.brightminds.school.repository.*;
+import com.brightminds.school.service.ClassScopeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @RestController
@@ -30,6 +33,7 @@ public class ExamController {
     private final PupilRepository pupilRepo;
     private final SubjectRepository subjectRepo;
     private final TermRepository termRepo;
+    private final ClassScopeService scopeService;
 
     @GetMapping
     public List<Exam> list(@RequestParam(required = false) UUID termId) {
@@ -72,18 +76,24 @@ public class ExamController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { examRepo.deleteById(id); }
 
-    // Marks endpoints
+    // Marks endpoints — exams themselves are school-wide, but a restricted teacher may only
+    // see/enter marks for pupils in the class(es) they teach.
     @GetMapping("/{examId}/marks")
-    public List<Mark> getMarks(@PathVariable UUID examId) {
-        return markRepo.findByExamId(examId);
+    public List<Mark> getMarks(@PathVariable UUID examId, Authentication auth) {
+        List<Mark> marks = markRepo.findByExamId(examId);
+        Set<UUID> scope = scopeService.restrictedClassIds(auth);
+        if (scope == null) return marks;
+        return marks.stream().filter(m -> m.getPupil().getSchoolClass() != null
+                && scope.contains(m.getPupil().getSchoolClass().getId())).toList();
     }
 
     @PostMapping("/{examId}/marks")
     @ResponseStatus(HttpStatus.CREATED)
-    public Mark addMark(@PathVariable UUID examId, @RequestBody MarkRequest req) {
+    public Mark addMark(@PathVariable UUID examId, @RequestBody MarkRequest req, Authentication auth) {
         Exam exam = examRepo.findById(examId).orElseThrow(() -> new EntityNotFoundException("Exam not found"));
         Pupil pupil = pupilRepo.findById(req.getPupilId()).orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
         Subject subject = subjectRepo.findById(req.getSubjectId()).orElseThrow(() -> new EntityNotFoundException("Subject not found"));
+        scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
 
         Mark mark = markRepo.findByPupilIdAndExamIdAndSubjectId(pupil.getId(), examId, subject.getId())
                 .orElse(new Mark());

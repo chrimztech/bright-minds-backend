@@ -4,6 +4,7 @@ import com.brightminds.school.security.JwtFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -43,6 +44,11 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
+                        // Uploaded images (staff photos/signatures, etc.) are rendered via plain
+                        // <img> tags — including inside printed documents — which never send an
+                        // Authorization header, so reading them must not require a session.
+                        // Uploading (POST) still requires authentication.
+                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider())

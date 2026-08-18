@@ -21,6 +21,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\control
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\EventController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\ExamController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\FeeController.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\FileUploadController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\GuardianController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\HealthController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\HomeworkController.java
@@ -175,6 +176,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\securit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\security\JwtUtil.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\AuditService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\AuthService.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\ClassScopeService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\DashboardService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\FeeAutoBillingService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\GlobalExceptionHandler.java
