@@ -62,6 +62,9 @@ public class SchoolSetting {
     @Column(name = "logo_url")
     private String logoUrl;
 
+    @Column(name = "banner_url", columnDefinition = "TEXT")
+    private String bannerUrl;
+
     @Column(name = "map_url")
     private String mapUrl;
 

@@ -7,6 +7,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -40,6 +41,12 @@ public class FeeItem {
     @Column(name = "is_recurring")
     @Builder.Default
     private boolean isRecurring = true;
+
+    // Carried onto every invoice auto-billed from this item (see FeeAutoBillingService) so
+    // the existing late-fee sweep, which keys off Invoice.dueDate, applies here too — mainly
+    // relevant for one-off charges like an Administrative or Registration fee.
+    @Column(name = "due_date")
+    private LocalDate dueDate;
 
     // Explicit accessor: Jackson strips the "is" prefix from Lombok's isRecurring()
     // by default, which would serialize this as "recurring" instead of "isRecurring".

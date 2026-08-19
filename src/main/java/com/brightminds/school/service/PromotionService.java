@@ -24,6 +24,7 @@ public class PromotionService {
     private final PupilPromotionRepository promotionRepo;
     private final AppUserRepository userRepo;
     private final AuditService auditService;
+    private final FeeAutoBillingService feeAutoBillingService;
 
     @Transactional
     public PromotionDto.Result promote(PromotionDto.Request request, UserDetails principal) {
@@ -65,6 +66,10 @@ public class PromotionService {
                     .academicYear(year)
                     .startedOn(promotedOn)
                     .build());
+            // Same as the single-pupil class-change path in PupilService.update() — bulk
+            // promotion moved pupils into a new class without ever billing that class's
+            // recurring fees, silently missing a whole cohort's fees at year-end.
+            feeAutoBillingService.billRecurringFeesForClass(pupil);
 
             PupilPromotion promotion = promotionRepo.save(PupilPromotion.builder()
                     .pupil(pupil)

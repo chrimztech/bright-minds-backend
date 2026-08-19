@@ -88,9 +88,13 @@ public class StaffAccountService {
         // Teaching staff automatically get the TEACHER role so they can immediately see
         // "My classes" / their pupils. Non-teaching staff get an account with no role yet —
         // an admin assigns the right role (e.g. ACCOUNTANT, LIBRARIAN) under Users & Roles.
+        // The reverse also has to hold: toggling "Is teacher" back off must revoke it, or a
+        // staff member moved off teaching duties keeps class-scoped access indefinitely.
         if (staff.isTeacher()) {
             boolean hasTeacherRole = account.getRoles().stream().anyMatch(r -> "TEACHER".equals(r.getRole()));
             if (!hasTeacherRole) account.getRoles().add(UserRole.builder().user(account).role("TEACHER").build());
+        } else {
+            account.getRoles().removeIf(r -> "TEACHER".equals(r.getRole()));
         }
         AppUser savedAccount = userRepo.save(account);
         staff.setUserId(savedAccount.getId());

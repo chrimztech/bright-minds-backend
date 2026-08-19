@@ -46,8 +46,17 @@ public class Admission {
     @Column(name = "interview_date")
     private LocalDate interviewDate;
 
+    // The amount actually collected — separate from pupil enrollment, which happens later
+    // (or never, for rejected/withdrawn applicants) and is tracked as income the moment it's
+    // recorded here, not deferred until enrollment.
     @Column(name = "reg_fee_paid", precision = 10, scale = 2)
     private BigDecimal regFeePaid;
+
+    @Column(name = "reg_fee_paid_on")
+    private LocalDate regFeePaidOn;
+
+    @Column(name = "reg_fee_payment_method")
+    private String regFeePaymentMethod;
 
     @Enumerated(EnumType.STRING)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -57,6 +66,12 @@ public class Admission {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_class_id")
     private SchoolClass targetClass;
+
+    // Set once this application is converted into an actual Pupil record via the enroll
+    // endpoint — prevents double-enrollment and links the two records for traceability.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pupil_id")
+    private Pupil pupil;
 
     @Column(columnDefinition = "TEXT")
     private String notes;

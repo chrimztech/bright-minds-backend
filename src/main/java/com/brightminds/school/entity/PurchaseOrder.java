@@ -45,6 +45,11 @@ public class PurchaseOrder {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    // Set once by the receive endpoint — guards against crediting inventory stock twice for
+    // the same PO (status alone isn't a safe guard since it can be edited elsewhere).
+    @Column(name = "received_at")
+    private Instant receivedAt;
+
     @Column(name = "created_by")
     private UUID createdBy;
 

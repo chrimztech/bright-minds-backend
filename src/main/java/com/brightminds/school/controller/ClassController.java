@@ -4,6 +4,7 @@ import com.brightminds.school.entity.AppUser;
 import com.brightminds.school.entity.SchoolClass;
 import com.brightminds.school.entity.Staff;
 import com.brightminds.school.repository.AppUserRepository;
+import com.brightminds.school.repository.FeeItemRepository;
 import com.brightminds.school.repository.SchoolClassRepository;
 import com.brightminds.school.repository.StaffRepository;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,6 +32,7 @@ public class ClassController {
     private final SchoolClassRepository classRepo;
     private final StaffRepository staffRepo;
     private final AppUserRepository userRepo;
+    private final FeeItemRepository feeItemRepo;
 
     @GetMapping
     public List<SchoolClass> list() {
@@ -89,6 +91,15 @@ public class ClassController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
+        // fee_items.class_id is ON DELETE SET NULL, and a null schoolClass on a recurring fee
+        // item means "applies to every class" (see FeeItemRepository.findRecurringForClass) —
+        // so without this, deleting a class would silently turn its fee item(s) universal
+        // instead of just orphaning them. Deactivating first preserves the historical row
+        // (still referenced by past invoices) without letting it leak onto other classes.
+        for (var item : feeItemRepo.findBySchoolClassId(id)) {
+            item.setRecurring(false);
+            feeItemRepo.save(item);
+        }
         classRepo.deleteById(id);
     }
 

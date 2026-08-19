@@ -49,6 +49,7 @@ public class FeeController {
                 .name(req.getName())
                 .amount(req.getAmount() != null ? req.getAmount() : BigDecimal.ZERO)
                 .isRecurring(req.isRecurring())
+                .dueDate(req.getDueDate())
                 .build();
         item.setCategory(req.getCategory() != null ? req.getCategory() : "SCHOOL_FEE");
         if (req.getClassId() != null) classRepo.findById(req.getClassId()).ifPresent(item::setSchoolClass);
@@ -64,6 +65,7 @@ public class FeeController {
         if (req.getName() != null) item.setName(req.getName());
         if (req.getAmount() != null) item.setAmount(req.getAmount());
         if (req.getCategory() != null) item.setCategory(req.getCategory());
+        if (req.getDueDate() != null) item.setDueDate(req.getDueDate());
         return feeItemRepo.save(item);
     }
 
@@ -116,10 +118,21 @@ public class FeeController {
         List<Invoice> overdue = invoiceRepo.findByDueDateBeforeAndStatusInAndLateFeeAppliedFalse(
                 LocalDate.now(), List.of(InvoiceStatus.UNPAID, InvoiceStatus.PARTIAL));
         List<Invoice> created = new java.util.ArrayList<>();
+        // Tagged with a shared LATE_FEE-category fee item (not left null) so these invoices
+        // show up as their own bucket in Accounts instead of silently falling into School Fees.
+        FeeItem lateFeeItem = feeItemRepo.findByCategoryAndNameAndTermIsNull("LATE_FEE", "Administrative Late Fee")
+                .orElseGet(() -> feeItemRepo.save(FeeItem.builder()
+                        .name("Administrative Late Fee")
+                        .category("LATE_FEE")
+                        .amount(LATE_FEE_AMOUNT)
+                        .isRecurring(false)
+                        .build()));
         for (Invoice original : overdue) {
             Invoice lateFee = Invoice.builder()
                     .invoiceNo(nextInvoiceNo())
                     .pupil(original.getPupil())
+                    .term(original.getTerm())
+                    .feeItem(lateFeeItem)
                     .total(LATE_FEE_AMOUNT)
                     .description("Administrative late payment fee — overdue invoice " + original.getInvoiceNo())
                     .dueDate(LocalDate.now())
@@ -163,12 +176,28 @@ public class FeeController {
             @RequestParam(required = false) UUID pupilId,
             @RequestParam(required = false) UUID invoiceId,
             @RequestParam(required = false) UUID classId,
-            @RequestParam(required = false) String grade) {
+            @RequestParam(required = false) String grade,
+            @RequestParam(required = false) UUID termId,
+            @RequestParam(required = false) UUID academicYearId) {
         List<Payment> base;
         if (invoiceId != null) base = paymentRepo.findByInvoiceIdOrderByPaidOnDesc(invoiceId);
         else if (pupilId != null) base = paymentRepo.findByPupilIdOrderByPaidOnDesc(pupilId);
         else base = paymentRepo.findAllByOrderByPaidOnDesc();
-        return filterByClassAndGrade(base, Payment::getPupil, classId, grade);
+        base = filterByClassAndGrade(base, Payment::getPupil, classId, grade);
+        if (termId != null) {
+            base = base.stream()
+                    .filter(p -> p.getInvoice() != null && p.getInvoice().getTerm() != null
+                            && termId.equals(p.getInvoice().getTerm().getId()))
+                    .toList();
+        }
+        if (academicYearId != null) {
+            base = base.stream()
+                    .filter(p -> p.getInvoice() != null && p.getInvoice().getTerm() != null
+                            && p.getInvoice().getTerm().getAcademicYear() != null
+                            && academicYearId.equals(p.getInvoice().getTerm().getAcademicYear().getId()))
+                    .toList();
+        }
+        return base;
     }
 
     @GetMapping("/payments/pending")
@@ -210,7 +239,7 @@ public class FeeController {
     // Correcting a wrongly-entered payment: if it had already been applied to an invoice's
     // paid total, the old amount is reversed and the new one re-applied so the invoice
     // balance stays accurate rather than drifting out of sync with the payment history.
-    @PreAuthorize("@perm.has('fees:collect')")
+    @PreAuthorize("@perm.has('fees:reverse')")
     @PutMapping("/payments/{id}")
     public Payment updatePayment(@PathVariable UUID id, @RequestBody PaymentRequest req) {
         Payment payment = paymentRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payment not found"));
@@ -230,7 +259,7 @@ public class FeeController {
         return paymentRepo.save(payment);
     }
 
-    @PreAuthorize("@perm.has('fees:collect')")
+    @PreAuthorize("@perm.has('fees:reverse')")
     @DeleteMapping("/payments/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePayment(@PathVariable UUID id) {
@@ -314,6 +343,7 @@ public class FeeController {
         private UUID classId, termId;
         private boolean isRecurring = true;
         private String category = "SCHOOL_FEE";
+        private LocalDate dueDate;
         // Explicit accessors: Jackson strips the "is" prefix from Lombok's isRecurring()/setRecurring()
         // by default, which would bind this as "recurring" instead of "isRecurring".
         @JsonProperty("isRecurring") public boolean isRecurring() { return isRecurring; }

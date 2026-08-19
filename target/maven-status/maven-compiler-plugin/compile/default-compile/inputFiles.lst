@@ -106,6 +106,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PupilEnrollment.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PupilPromotion.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PurchaseOrder.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\PurchaseOrderItem.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\ReportCardRemark.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Role.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\SchoolClass.java
@@ -117,6 +118,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Term.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\TimetableSlot.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\TransportAssignment.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\TransportPickupPoint.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\TransportRoute.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\UserRole.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Vehicle.java
@@ -157,6 +159,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\reposit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PupilEnrollmentRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PupilPromotionRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PupilRepository.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PurchaseOrderItemRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\PurchaseOrderRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\ReportCardRemarkRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\RoleRepository.java
@@ -168,6 +171,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\reposit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\TermRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\TimetableSlotRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\TransportAssignmentRepository.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\TransportPickupPointRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\TransportRouteRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\VehicleRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\security\CustomUserDetails.java

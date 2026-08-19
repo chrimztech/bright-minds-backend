@@ -1,8 +1,10 @@
 package com.brightminds.school.controller;
 
+import com.brightminds.school.entity.Expense;
 import com.brightminds.school.entity.PayrollPeriod;
 import com.brightminds.school.entity.Payslip;
 import com.brightminds.school.entity.enums.PayrollStatus;
+import com.brightminds.school.repository.ExpenseRepository;
 import com.brightminds.school.repository.PayrollPeriodRepository;
 import com.brightminds.school.repository.PayslipRepository;
 import com.brightminds.school.repository.StaffRepository;
@@ -30,6 +32,7 @@ public class PayrollController {
     private final PayrollPeriodRepository periodRepo;
     private final PayslipRepository payslipRepo;
     private final StaffRepository staffRepo;
+    private final ExpenseRepository expenseRepo;
     private final AuditService audit;
 
     @GetMapping("/periods")
@@ -53,11 +56,33 @@ public class PayrollController {
         return periodRepo.save(p);
     }
 
+    // Records a "Salaries" Expense for this period's total net pay — previously marking a
+    // period paid had no connection to Accounts at all, so the school's largest recurring
+    // expense category never actually showed up in the books unless someone separately
+    // re-entered it by hand.
     @PatchMapping("/periods/{id}/mark-paid")
     public PayrollPeriod markPaid(@PathVariable UUID id) {
         PayrollPeriod p = periodRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Period not found"));
+        if (p.getStatus() == PayrollStatus.PAID) throw new IllegalArgumentException("This period has already been marked paid");
+
+        List<Payslip> slips = payslipRepo.findByPeriodId(id);
+        BigDecimal total = slips.stream().map(Payslip::getNetPay).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (total.signum() > 0) {
+            expenseRepo.save(Expense.builder()
+                    .category("Salaries")
+                    .amount(total)
+                    .description("Payroll — " + p.getPeriodLabel() + " (" + slips.size() + " payslip(s))")
+                    .paymentMethod("BANK")
+                    .refNo(p.getPeriodLabel())
+                    .spentOn(p.getPeriodEnd() != null ? p.getPeriodEnd() : LocalDate.now())
+                    .build());
+        }
+
         p.setStatus(PayrollStatus.PAID);
-        return periodRepo.save(p);
+        PayrollPeriod saved = periodRepo.save(p);
+        audit.log("MARK_PAYROLL_PAID", "PayrollPeriod", id.toString(),
+                slips.size() + " payslip(s) totalling " + total + " recorded as a Salaries expense");
+        return saved;
     }
 
     @GetMapping("/payslips")
@@ -83,6 +108,7 @@ public class PayrollController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('payroll:reverse')")
     @PutMapping("/payslips/{id}")
     public Payslip updatePayslip(@PathVariable UUID id, @RequestBody PayslipRequest req) {
         Payslip p = payslipRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Payslip not found"));
@@ -98,6 +124,7 @@ public class PayrollController {
         return payslipRepo.save(p);
     }
 
+    @PreAuthorize("@perm.has('payroll:reverse')")
     @DeleteMapping("/payslips/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePayslip(@PathVariable UUID id) {

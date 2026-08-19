@@ -1,10 +1,12 @@
 package com.brightminds.school.controller;
 
 import com.brightminds.school.entity.TransportAssignment;
+import com.brightminds.school.entity.TransportPickupPoint;
 import com.brightminds.school.entity.TransportRoute;
 import com.brightminds.school.entity.Vehicle;
 import com.brightminds.school.repository.*;
 import com.brightminds.school.service.ClassScopeService;
+import com.brightminds.school.service.FeeAutoBillingService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.Data;
@@ -22,9 +24,11 @@ import java.util.UUID;
 public class TransportController {
     private final TransportRouteRepository routeRepo;
     private final TransportAssignmentRepository assignRepo;
+    private final TransportPickupPointRepository pointRepo;
     private final VehicleRepository vehicleRepo;
     private final PupilRepository pupilRepo;
     private final ClassScopeService scopeService;
+    private final FeeAutoBillingService billingService;
 
     @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/vehicles") public List<Vehicle> vehicles() { return vehicleRepo.findAll(); }
@@ -47,6 +51,16 @@ public class TransportController {
     @DeleteMapping("/routes/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteRoute(@PathVariable UUID id) { routeRepo.deleteById(id); }
 
     @PreAuthorize("@perm.has('transport:view')")
+    @GetMapping("/routes/{routeId}/points") public List<TransportPickupPoint> points(@PathVariable UUID routeId) { return pointRepo.findByRouteId(routeId); }
+    @PreAuthorize("@perm.has('transport:manage')")
+    @PostMapping("/routes/{routeId}/points") @ResponseStatus(HttpStatus.CREATED) public TransportPickupPoint addPoint(@PathVariable UUID routeId, @RequestBody PointReq req) {
+        var route = routeRepo.findById(routeId).orElseThrow(() -> new EntityNotFoundException("Route not found"));
+        return pointRepo.save(TransportPickupPoint.builder().route(route).name(req.getName()).fee(req.getFee() != null ? req.getFee() : BigDecimal.ZERO).build());
+    }
+    @PreAuthorize("@perm.has('transport:manage')")
+    @DeleteMapping("/points/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deletePoint(@PathVariable UUID id) { pointRepo.deleteById(id); }
+
+    @PreAuthorize("@perm.has('transport:view')")
     @GetMapping("/assignments") public List<TransportAssignment> assignments(@RequestParam(required = false) UUID routeId, Authentication auth) {
         List<TransportAssignment> result = routeId != null ? assignRepo.findByRouteId(routeId) : assignRepo.findAll();
         Set<UUID> scope = scopeService.restrictedClassIds(auth);
@@ -58,7 +72,15 @@ public class TransportController {
         var pupil = pupilRepo.findById(req.getPupilId()).orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
         scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
         var route = routeRepo.findById(req.getRouteId()).orElseThrow(() -> new EntityNotFoundException("Route not found"));
-        return assignRepo.save(TransportAssignment.builder().pupil(pupil).route(route).pickupPoint(req.getPickupPoint()).build());
+        TransportPickupPoint point = req.getPickupPointId() != null
+                ? pointRepo.findById(req.getPickupPointId()).orElseThrow(() -> new EntityNotFoundException("Pickup point not found"))
+                : null;
+        var saved = assignRepo.save(TransportAssignment.builder().pupil(pupil).route(route)
+                .pickupPointRef(point)
+                .pickupPoint(point != null ? point.getName() : req.getPickupPoint())
+                .build());
+        billingService.billTransportFee(saved);
+        return saved;
     }
     @PreAuthorize("@perm.has('transport:manage')")
     @DeleteMapping("/assignments/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteAssign(@PathVariable UUID id, Authentication auth) {
@@ -69,5 +91,6 @@ public class TransportController {
 
     @Data public static class VehicleReq { private String regNo; private String model; private Integer capacity; private String driverName; private String driverPhone; private String notes; }
     @Data public static class RouteReq { private String name; private String pickupPoints; private BigDecimal fee; private UUID vehicleId; }
-    @Data public static class AssignReq { private UUID pupilId; private UUID routeId; private String pickupPoint; }
+    @Data public static class PointReq { private String name; private BigDecimal fee; }
+    @Data public static class AssignReq { private UUID pupilId; private UUID routeId; private UUID pickupPointId; private String pickupPoint; }
 }

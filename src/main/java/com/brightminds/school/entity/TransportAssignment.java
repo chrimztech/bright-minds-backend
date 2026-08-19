@@ -24,8 +24,14 @@ public class TransportAssignment {
     @JoinColumn(name = "route_id", nullable = false)
     private TransportRoute route;
 
+    // Free-text label kept for backward compatibility / display; when pickupPointRef is set,
+    // this is auto-filled from its name so existing screens reading this string still work.
     @Column(name = "pickup_point")
     private String pickupPoint;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pickup_point_id")
+    private TransportPickupPoint pickupPointRef;
 
     @Builder.Default
     private boolean active = true;

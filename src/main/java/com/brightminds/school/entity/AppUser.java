@@ -46,7 +46,12 @@ public class AppUser {
     @Builder.Default
     private boolean mustChangePassword = false;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    // orphanRemoval is required here, not just cascade=ALL: UserManagementController's
+    // role-update endpoint does roles.clear() + re-add on an existing user, and UserRole.user
+    // is NOT NULL — without orphanRemoval, Hibernate tries to null out the removed rows'
+    // user_id instead of deleting them, which violates that constraint and makes every role
+    // change (anything but the very first assignment) fail.
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<UserRole> roles = new ArrayList<>();
 }

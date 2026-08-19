@@ -50,6 +50,7 @@ public class SettingsController {
         if (req.tpin != null) s.setTpin(req.tpin);
         if (req.currency != null) s.setCurrency(req.currency);
         if (req.logoUrl != null) s.setLogoUrl(req.logoUrl);
+        if (req.bannerUrl != null) s.setBannerUrl(req.bannerUrl);
         if (req.mapUrl != null) s.setMapUrl(req.mapUrl);
         if (req.gradingScale != null) s.setGradingScale(req.gradingScale);
         // Clearable numeric fields: the settings form omits these from the payload
@@ -86,6 +87,7 @@ public class SettingsController {
         private Integer establishedYear;
         private String currency;
         private String logoUrl;
+        private String bannerUrl;
         private String mapUrl;
         private Double latitude;
         private Double longitude;
