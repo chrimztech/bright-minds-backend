@@ -15,9 +15,12 @@ import java.util.UUID;
 @RestController @RequestMapping("/subjects") @RequiredArgsConstructor @Tag(name = "Subjects")
 public class SubjectController {
     private final SubjectRepository repo;
-    // GETs left open to all authenticated users: subjects are referenced as dropdown data
-    // by exams, marks, homework and timetable pages across teaching/admin roles.
+    // subjects:view mirrors classes:view — real, grantable/revocable permission (rather than
+    // an unconditional bypass) granted broadly by default since subjects are referenced as
+    // dropdown data by exams, marks, homework and timetable pages across teaching/admin roles.
+    @PreAuthorize("@perm.has('subjects:view') or @perm.has('subjects:manage')")
     @GetMapping public List<Subject> list() { return repo.findAll(); }
+    @PreAuthorize("@perm.has('subjects:view') or @perm.has('subjects:manage')")
     @GetMapping("/{id}") public Subject get(@PathVariable UUID id) { return repo.findById(id).orElseThrow(() -> new EntityNotFoundException("Not found")); }
     @PreAuthorize("@perm.has('subjects:manage')")
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public Subject create(@RequestBody SubjectReq req) {

@@ -1,5 +1,6 @@
 package com.brightminds.school.service;
 
+import com.brightminds.school.repository.PermissionRepository;
 import com.brightminds.school.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,7 @@ import java.util.stream.Collectors;
 public class PermissionService {
 
     private final RoleRepository roleRepo;
+    private final PermissionRepository permissionRepo;
 
     public boolean has(String permission) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -36,5 +38,20 @@ public class PermissionService {
         return roleRepo.findByNameIn(roleNames).stream()
                 .flatMap(r -> r.getPermissions().stream())
                 .anyMatch(p -> p.getName().equalsIgnoreCase(permission));
+    }
+
+    // The resolved permission-name set for a set of role names — returned at login so the
+    // frontend can gate its own UI (sidebar nav, action buttons) by actual granted
+    // permissions instead of hardcoded role-name lists, which is what let a custom role's
+    // granted permissions silently never surface a nav link. SUPER_ADMIN gets every known
+    // permission name, mirroring the unconditional bypass in has() above.
+    public Set<String> allPermissions(Set<String> roleNames) {
+        if (roleNames.contains("SUPER_ADMIN")) {
+            return permissionRepo.findAll().stream().map(p -> p.getName()).collect(Collectors.toSet());
+        }
+        return roleRepo.findByNameIn(roleNames).stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .map(p -> p.getName())
+                .collect(Collectors.toSet());
     }
 }

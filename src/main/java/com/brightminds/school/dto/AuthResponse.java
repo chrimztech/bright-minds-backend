@@ -15,5 +15,6 @@ public class AuthResponse {
     private String fullName;
     private UUID userId;
     private List<String> roles;
+    private List<String> permissions;
     private boolean mustChangePassword;
 }

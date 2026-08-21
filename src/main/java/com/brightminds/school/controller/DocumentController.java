@@ -22,6 +22,7 @@ public class DocumentController {
 
     private final DocumentRepository repo;
 
+    @PreAuthorize("@perm.has('documents:view') or @perm.has('documents:manage')")
     @GetMapping
     public List<Document> list() {
         return repo.findAll();

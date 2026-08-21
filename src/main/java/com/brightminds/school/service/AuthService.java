@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,6 +29,7 @@ public class AuthService {
     private final AuthenticationManager authManager;
     private final JwtUtil jwtUtil;
     private final AuditService auditService;
+    private final PermissionService permissionService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -69,12 +71,16 @@ public class AuthService {
         List<String> roles = details.getAuthorities().stream()
                 .map(a -> a.getAuthority().replace("ROLE_", ""))
                 .collect(Collectors.toList());
+        // Resolved once here so the frontend can gate its own UI (sidebar nav, action
+        // buttons) by actual granted permissions instead of hardcoded role-name lists.
+        List<String> permissions = List.copyOf(permissionService.allPermissions(Set.copyOf(roles)));
         return AuthResponse.builder()
                 .token(token)
                 .email(details.getUsername())
                 .fullName(details.getUser().getFullName())
                 .userId(details.getUser().getId())
                 .roles(roles)
+                .permissions(permissions)
                 .mustChangePassword(details.getUser().isMustChangePassword())
                 .build();
     }
