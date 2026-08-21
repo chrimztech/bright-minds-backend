@@ -26,7 +26,6 @@ import java.util.UUID;
 @RequestMapping("/payroll")
 @RequiredArgsConstructor
 @Tag(name = "Payroll")
-@PreAuthorize("@perm.has('payroll:manage')")
 public class PayrollController {
 
     private final PayrollPeriodRepository periodRepo;
@@ -35,9 +34,14 @@ public class PayrollController {
     private final ExpenseRepository expenseRepo;
     private final AuditService audit;
 
+    // payroll:view alone (without :manage) previously granted no access at all — every
+    // endpoint including these GETs was gated behind :manage, so a role deliberately given
+    // view-only rights via Roles & Permissions was silently blocked from viewing anything.
+    @PreAuthorize("@perm.has('payroll:view') or @perm.has('payroll:manage')")
     @GetMapping("/periods")
     public List<PayrollPeriod> listPeriods() { return periodRepo.findAllByOrderByPeriodStartDesc(); }
 
+    @PreAuthorize("@perm.has('payroll:manage')")
     @PostMapping("/periods")
     @ResponseStatus(HttpStatus.CREATED)
     public PayrollPeriod createPeriod(@RequestBody PeriodRequest req) {
@@ -49,6 +53,7 @@ public class PayrollController {
                 .build());
     }
 
+    @PreAuthorize("@perm.has('payroll:manage')")
     @PatchMapping("/periods/{id}/approve")
     public PayrollPeriod approve(@PathVariable UUID id) {
         PayrollPeriod p = periodRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Period not found"));
@@ -60,6 +65,7 @@ public class PayrollController {
     // period paid had no connection to Accounts at all, so the school's largest recurring
     // expense category never actually showed up in the books unless someone separately
     // re-entered it by hand.
+    @PreAuthorize("@perm.has('payroll:manage')")
     @PatchMapping("/periods/{id}/mark-paid")
     public PayrollPeriod markPaid(@PathVariable UUID id) {
         PayrollPeriod p = periodRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Period not found"));
@@ -85,6 +91,7 @@ public class PayrollController {
         return saved;
     }
 
+    @PreAuthorize("@perm.has('payroll:view') or @perm.has('payroll:manage')")
     @GetMapping("/payslips")
     public List<Payslip> listPayslips(
             @RequestParam(required = false) UUID periodId,
@@ -94,6 +101,7 @@ public class PayrollController {
         return payslipRepo.findAll();
     }
 
+    @PreAuthorize("@perm.has('payroll:manage')")
     @PostMapping("/payslips")
     @ResponseStatus(HttpStatus.CREATED)
     public Payslip createPayslip(@RequestBody PayslipRequest req) {

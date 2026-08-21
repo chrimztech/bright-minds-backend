@@ -3,6 +3,11 @@ spring:
     name: bright-minds-school-hub
 
   datasource:
+    # Verified against the actual running Postgres instance (netstat shows it listening on
+    # 5433, not 5432) — this value has been flip-flopped back to 5432 by several commits in
+    # this repo's history, which breaks every DB-dependent feature (including role updates)
+    # the moment the backend can't connect at all. If your Postgres really does move to a
+    # different port, update this deliberately rather than guessing.
     url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:11111111}

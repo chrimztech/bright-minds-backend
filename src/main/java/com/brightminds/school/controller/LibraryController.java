@@ -28,6 +28,7 @@ public class LibraryController {
     private final PupilRepository pupilRepo;
     private final StaffRepository staffRepo;
 
+    @PreAuthorize("@perm.has('library:view')")
     @GetMapping("/books")
     public Object listBooks(
             @RequestParam(required = false) String q,
@@ -37,6 +38,7 @@ public class LibraryController {
         return bookRepo.findAll();
     }
 
+    @PreAuthorize("@perm.has('library:view')")
     @GetMapping("/books/{id}")
     public LibraryBook getBook(@PathVariable UUID id) {
         return bookRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Book not found"));
@@ -75,6 +77,7 @@ public class LibraryController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBook(@PathVariable UUID id) { bookRepo.deleteById(id); }
 
+    @PreAuthorize("@perm.has('library:view')")
     @GetMapping("/loans")
     public List<LibraryLoan> listLoans(@RequestParam(required = false) String status) {
         if (status != null) return loanRepo.findByStatus(LoanStatus.valueOf(status.toUpperCase()));

@@ -78,6 +78,11 @@ public class PtcController {
 
     // ─── Meetings ─────────────────────────────────────────────────────────────
 
+    // Every meeting school-wide, including other guardians' phone numbers and private
+    // meeting/agenda notes — this is the admin "All Meetings" view, not a personal one
+    // (those are /meetings/my and /meetings/me below), so it must not be left open to
+    // any authenticated user the way it previously was.
+    @PreAuthorize("@perm.has('ptc:manage')")
     @GetMapping("/meetings")
     public List<PtcMeeting> listMeetings(@RequestParam(required = false) UUID sessionId) {
         if (sessionId != null) return meetingRepo.findBySessionIdOrderByMeetingDateAscStartTimeAsc(sessionId);

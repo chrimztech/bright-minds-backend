@@ -25,7 +25,6 @@ import java.util.UUID;
 @RequestMapping("/exams")
 @RequiredArgsConstructor
 @Tag(name = "Exams & Marks")
-@PreAuthorize("@perm.has('exams:manage')")
 public class ExamController {
 
     private final ExamRepository examRepo;
@@ -35,17 +34,23 @@ public class ExamController {
     private final TermRepository termRepo;
     private final ClassScopeService scopeService;
 
+    // exams:view alone (without :manage) previously granted no access at all — every
+    // endpoint including these GETs was gated behind :manage, so a role deliberately given
+    // view-only rights via Roles & Permissions was silently blocked from viewing anything.
+    @PreAuthorize("@perm.has('exams:view') or @perm.has('exams:manage')")
     @GetMapping
     public List<Exam> list(@RequestParam(required = false) UUID termId) {
         if (termId != null) return examRepo.findByTerm_IdOrderByExamDateDesc(termId);
         return examRepo.findAllByOrderByExamDateDesc();
     }
 
+    @PreAuthorize("@perm.has('exams:view') or @perm.has('exams:manage')")
     @GetMapping("/{id}")
     public Exam getById(@PathVariable UUID id) {
         return examRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Exam not found"));
     }
 
+    @PreAuthorize("@perm.has('exams:manage')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Exam create(@RequestBody ExamRequest req) {
@@ -62,6 +67,7 @@ public class ExamController {
         return examRepo.save(exam);
     }
 
+    @PreAuthorize("@perm.has('exams:manage')")
     @PutMapping("/{id}")
     public Exam update(@PathVariable UUID id, @RequestBody ExamRequest req) {
         Exam exam = examRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Exam not found"));
@@ -72,12 +78,14 @@ public class ExamController {
         return examRepo.save(exam);
     }
 
+    @PreAuthorize("@perm.has('exams:manage')")
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { examRepo.deleteById(id); }
 
     // Marks endpoints — exams themselves are school-wide, but a restricted teacher may only
     // see/enter marks for pupils in the class(es) they teach.
+    @PreAuthorize("@perm.has('exams:view') or @perm.has('exams:manage')")
     @GetMapping("/{examId}/marks")
     public List<Mark> getMarks(@PathVariable UUID examId, Authentication auth) {
         List<Mark> marks = markRepo.findByExamId(examId);
@@ -87,6 +95,7 @@ public class ExamController {
                 && scope.contains(m.getPupil().getSchoolClass().getId())).toList();
     }
 
+    @PreAuthorize("@perm.has('exams:manage')")
     @PostMapping("/{examId}/marks")
     @ResponseStatus(HttpStatus.CREATED)
     public Mark addMark(@PathVariable UUID examId, @RequestBody MarkRequest req, Authentication auth) {
