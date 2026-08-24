@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController @RequestMapping("/procurement") @RequiredArgsConstructor @Tag(name = "Procurement")
@@ -55,7 +56,11 @@ public class ProcurementController {
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     public PurchaseOrder createOrder(@RequestBody OrderReq req) {
-        var po = PurchaseOrder.builder().poNo(req.getPoNo()).orderDate(req.getOrderDate() != null ? req.getOrderDate() : LocalDate.now())
+        // The frontend's "New PO" form has no poNo field, so req.getPoNo() was always null —
+        // the "PO NO" table column showed blank and the delete-confirm dialog literally read
+        // "Delete null?". Auto-generate like Admission/Pupil numbers.
+        String poNo = req.getPoNo() == null || req.getPoNo().isBlank() ? generatePoNo() : req.getPoNo().trim();
+        var po = PurchaseOrder.builder().poNo(poNo).orderDate(req.getOrderDate() != null ? req.getOrderDate() : LocalDate.now())
                 .notes(req.getNotes()).build();
         if (req.getSupplierId() != null) supplierRepo.findById(req.getSupplierId()).ifPresent(po::setSupplier);
 
@@ -125,6 +130,16 @@ public class ProcurementController {
     }
 
     @DeleteMapping("/orders/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteOrder(@PathVariable UUID id) { poRepo.deleteById(id); }
+
+    private String generatePoNo() {
+        String candidate;
+        do {
+            candidate = "PO-%d-%s".formatted(
+                    LocalDate.now().getYear(),
+                    UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT));
+        } while (poRepo.existsByPoNo(candidate));
+        return candidate;
+    }
 
     @Data public static class SupplierReq { private String name; private String contactPerson; private String phone; private String email; private String address; private String taxNo; private String notes; }
     @Data public static class OrderReq { private String poNo; private UUID supplierId; private LocalDate orderDate; private BigDecimal total; private String notes; private List<OrderItemReq> items; }

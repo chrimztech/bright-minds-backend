@@ -94,6 +94,24 @@ public class FeeController {
         return invoiceRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
     }
 
+    // No way existed to remove an invoice at all (e.g. one created by mistake with no
+    // payments against it) — it would sit permanently. Only allowed once every payment
+    // against it has been reversed/removed first, both to avoid a FK violation (Payment.invoice
+    // is not cascade-deleted) and to keep the audit trail intact for any invoice real money
+    // actually touched.
+    @PreAuthorize("@perm.has('fees:reverse')")
+    @DeleteMapping("/invoices/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteInvoice(@PathVariable UUID id) {
+        Invoice invoice = invoiceRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
+        if (!paymentRepo.findByInvoiceIdOrderByPaidOnDesc(id).isEmpty()) {
+            throw new IllegalArgumentException("Cannot delete an invoice with payments recorded against it — reverse the payment(s) first.");
+        }
+        audit.log("DELETE_INVOICE", "Invoice", id.toString(),
+                "invoiceNo " + invoice.getInvoiceNo() + ", total " + invoice.getTotal());
+        invoiceRepo.deleteById(id);
+    }
+
     @PreAuthorize("@perm.has('fees:create')")
     @PostMapping("/invoices")
     @ResponseStatus(HttpStatus.CREATED)

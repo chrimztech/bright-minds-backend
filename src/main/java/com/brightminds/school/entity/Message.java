@@ -26,6 +26,13 @@ public class Message {
 
     private String audience;
 
+    // Free-text name/contact of the specific person, only used/required when audience is
+    // "INDIVIDUAL" — this feature is a manual communication log, not a real dispatch
+    // integration (no email/SMS/WhatsApp is actually sent), so there's no guardian/staff
+    // record to link to; the sender just records who they contacted.
+    @Column(name = "recipient_label")
+    private String recipientLabel;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id")
     private SchoolClass schoolClass;

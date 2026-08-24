@@ -81,6 +81,37 @@ public class SchoolSetting {
     @Column(name = "current_term_id")
     private UUID currentTermId;
 
+    // Dashboard hero + quick-links content — editable by SUPER_ADMIN only (see
+    // SettingsController#updateDashboard), rendered for every logged-in user.
+    @Column(name = "dashboard_hero_heading")
+    private String dashboardHeroHeading;
+
+    @Column(name = "dashboard_hero_subtext", columnDefinition = "TEXT")
+    private String dashboardHeroSubtext;
+
+    @Column(name = "dashboard_hero_image_url", columnDefinition = "TEXT")
+    private String dashboardHeroImageUrl;
+
+    @Column(name = "dashboard_button_label")
+    private String dashboardButtonLabel;
+
+    @Column(name = "dashboard_button_url")
+    private String dashboardButtonUrl;
+
+    // JSON array of {label, url} quick-link cards, stored as text like gradingScale above.
+    @Column(name = "dashboard_links", columnDefinition = "TEXT")
+    @Builder.Default
+    private String dashboardLinks = "[]";
+
+    // A single optional link button shown on the public login page (e.g. "Visit our website",
+    // "Apply for admission") — editable by SUPER_ADMIN only, same as the dashboard content.
+    // Exposed pre-login via the minimal PublicController#branding endpoint, not GET /settings.
+    @Column(name = "login_button_label")
+    private String loginButtonLabel;
+
+    @Column(name = "login_button_url")
+    private String loginButtonUrl;
+
     @UpdateTimestamp
     @Column(name = "updated_at")
     private Instant updatedAt;

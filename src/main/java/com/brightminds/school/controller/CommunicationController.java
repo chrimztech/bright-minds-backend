@@ -24,13 +24,13 @@ public class CommunicationController {
     @PostMapping @ResponseStatus(HttpStatus.CREATED) public Message send(@RequestBody MessageRequest req) {
         var msg = Message.builder().body(req.getBody()).subject(req.getSubject())
                 .channel(req.getChannel() != null ? req.getChannel() : "sms")
-                .audience(req.getAudience()).sentAt(Instant.now()).build();
+                .audience(req.getAudience()).recipientLabel(req.getRecipientLabel()).sentAt(Instant.now()).build();
         if (req.getClassId() != null) classRepo.findById(req.getClassId()).ifPresent(msg::setSchoolClass);
         return repo.save(msg);
     }
 
     @Data public static class MessageRequest {
         private String body; private String subject; private String channel;
-        private String audience; private UUID classId;
+        private String audience; private UUID classId; private String recipientLabel;
     }
 }

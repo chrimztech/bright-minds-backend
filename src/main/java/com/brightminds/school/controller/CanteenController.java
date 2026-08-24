@@ -60,14 +60,21 @@ public class CanteenController {
                 : saleRepo.findAll();
         Set<UUID> scope = scopeService.restrictedClassIds(auth);
         if (scope == null) return result;
-        return result.stream().filter(s -> s.getPupil().getSchoolClass() != null && scope.contains(s.getPupil().getSchoolClass().getId())).toList();
+        // Walk-in sales (no pupil) aren't tied to any class a scoped teacher teaches, so they're
+        // excluded here rather than causing a NullPointerException on s.getPupil().
+        return result.stream().filter(s -> s.getPupil() != null && s.getPupil().getSchoolClass() != null && scope.contains(s.getPupil().getSchoolClass().getId())).toList();
     }
     @PreAuthorize("@perm.has('canteen:manage')")
     @PostMapping("/sales") @ResponseStatus(HttpStatus.CREATED) public CanteenSale recordSale(@RequestBody SaleReq req, Authentication auth) {
-        if (req.getPupilId() == null) throw new IllegalArgumentException("Pupil is required");
-        var pupil = pupilRepo.findById(req.getPupilId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Pupil not found"));
-        scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
+        // Pupil is optional — canteens routinely serve staff/visitors/walk-ins not tied to any
+        // pupil record, and CanteenSale.pupil is a nullable column, but this endpoint used to
+        // reject every such sale outright.
+        Pupil pupil = null;
+        if (req.getPupilId() != null) {
+            pupil = pupilRepo.findById(req.getPupilId())
+                    .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("Pupil not found"));
+        }
+        scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil != null && pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
         var sale = CanteenSale.builder().itemName(req.getItemName()).quantity(req.getQuantity())
                 .unitPrice(req.getUnitPrice()).total(req.getUnitPrice().multiply(BigDecimal.valueOf(req.getQuantity())))
                 .paymentMethod(req.getPaymentMethod() != null ? req.getPaymentMethod() : "cash").notes(req.getNotes())
@@ -78,7 +85,10 @@ public class CanteenController {
     @PreAuthorize("@perm.has('canteen:manage')")
     @DeleteMapping("/sales/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void deleteSale(@PathVariable UUID id, Authentication auth) {
         CanteenSale sale = saleRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Sale not found"));
-        scopeService.assertInScope(scopeService.restrictedClassIds(auth), sale.getPupil().getSchoolClass() != null ? sale.getPupil().getSchoolClass().getId() : null);
+        // A walk-in (no-pupil) sale isn't tied to any class, so a class-scoped teacher is
+        // correctly denied here (assertInScope rejects a null classId for a restricted scope)
+        // rather than this line throwing a NullPointerException first.
+        scopeService.assertInScope(scopeService.restrictedClassIds(auth), sale.getPupil() != null && sale.getPupil().getSchoolClass() != null ? sale.getPupil().getSchoolClass().getId() : null);
         saleRepo.deleteById(id);
     }
 

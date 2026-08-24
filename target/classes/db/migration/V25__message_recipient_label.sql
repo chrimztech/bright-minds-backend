@@ -1,0 +1,1 @@
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS recipient_label VARCHAR(255);

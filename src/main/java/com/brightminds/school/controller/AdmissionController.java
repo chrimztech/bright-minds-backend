@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController
@@ -47,8 +48,13 @@ public class AdmissionController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Admission create(@RequestBody AdmissionRequest req) {
+        // The frontend's "New application" form has no applicationNo field, so req.getApplicationNo()
+        // was always null — every application's Ref column and its delete-confirm text ("Delete
+        // application null?") showed literal "null". Auto-generate like Pupil admission numbers.
+        String applicationNo = req.getApplicationNo() == null || req.getApplicationNo().isBlank()
+                ? generateApplicationNo() : req.getApplicationNo().trim();
         Admission a = Admission.builder()
-                .applicationNo(req.getApplicationNo())
+                .applicationNo(applicationNo)
                 .fullName(req.getFullName())
                 .gender(req.getGender())
                 .dob(req.getDob())
@@ -125,6 +131,16 @@ public class AdmissionController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) { repo.deleteById(id); }
+
+    private String generateApplicationNo() {
+        String candidate;
+        do {
+            candidate = "ADM-%d-%s".formatted(
+                    LocalDate.now().getYear(),
+                    UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT));
+        } while (repo.existsByApplicationNo(candidate));
+        return candidate;
+    }
 
     @Data
     public static class AdmissionRequest {

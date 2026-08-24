@@ -64,6 +64,37 @@ public class SettingsController {
         return repo.save(s);
     }
 
+    // Dashboard content (hero image/heading/subtext/button + quick-links) is deliberately
+    // hardcoded to SUPER_ADMIN rather than gated by the revocable `settings:edit` permission:
+    // the user wants dashboard branding locked to the top role regardless of how a school
+    // configures its other roles' permissions, so it can't be delegated away by mistake.
+    @PutMapping("/dashboard")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public SchoolSetting updateDashboard(@RequestBody DashboardRequest req) {
+        SchoolSetting s = get();
+        s.setDashboardHeroHeading(req.heroHeading);
+        s.setDashboardHeroSubtext(req.heroSubtext);
+        s.setDashboardHeroImageUrl(req.heroImageUrl);
+        s.setDashboardButtonLabel(req.buttonLabel);
+        s.setDashboardButtonUrl(req.buttonUrl);
+        s.setDashboardLinks(req.links != null ? req.links : "[]");
+        s.setLoginButtonLabel(req.loginButtonLabel);
+        s.setLoginButtonUrl(req.loginButtonUrl);
+        return repo.save(s);
+    }
+
+    @Data
+    public static class DashboardRequest {
+        private String heroHeading;
+        private String heroSubtext;
+        private String heroImageUrl;
+        private String buttonLabel;
+        private String buttonUrl;
+        private String links;
+        private String loginButtonLabel;
+        private String loginButtonUrl;
+    }
+
     @Data
     public static class SettingsRequest {
         private String name;

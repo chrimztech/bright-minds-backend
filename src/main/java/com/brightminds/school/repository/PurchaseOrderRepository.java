@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface PurchaseOrderRepository extends JpaRepository<PurchaseOrder, UUID> {
     List<PurchaseOrder> findAllByOrderByOrderDateDesc();
+    boolean existsByPoNo(String poNo);
 }

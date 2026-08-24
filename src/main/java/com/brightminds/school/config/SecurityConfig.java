@@ -44,6 +44,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
+                        // Minimal branding (name/logo/motto + optional login-page button) needed by
+                        // the login screen itself, before any session exists — see PublicController
+                        // for why this can't just be GET /settings (which requires authentication).
+                        .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
                         // Uploaded images (staff photos/signatures, etc.) are rendered via plain
                         // <img> tags — including inside printed documents — which never send an
                         // Authorization header, so reading them must not require a session.

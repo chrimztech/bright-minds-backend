@@ -13,6 +13,15 @@ spring:
     password: ${DB_PASSWORD:11111111}
     driver-class-name: org.postgresql.Driver
 
+  jackson:
+    # Several frontend forms (e.g. calendar audience: "all"/"staff"/...) send lowercase
+    # values for fields backed by uppercase Java enums (EventAudience.ALL, etc.), which
+    # Jackson otherwise rejects outright with a 400 "request body could not be read".
+    # Accepting case-insensitively here fixes that class of bug everywhere in one place
+    # instead of chasing down every enum-backed field one at a time.
+    mapper:
+      accept-case-insensitive-enums: true
+
   jpa:
     hibernate:
       ddl-auto: update

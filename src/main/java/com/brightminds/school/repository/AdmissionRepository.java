@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface AdmissionRepository extends JpaRepository<Admission, UUID> {
     List<Admission> findByStatus(AdmissionStatus status);
+    boolean existsByApplicationNo(String applicationNo);
 
     @Query("SELECT a FROM Admission a WHERE LOWER(a.fullName) LIKE LOWER(CONCAT('%',:q,'%'))")
     Page<Admission> search(String q, Pageable pageable);

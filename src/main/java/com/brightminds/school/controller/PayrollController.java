@@ -91,6 +91,24 @@ public class PayrollController {
         return saved;
     }
 
+    // No way existed to remove a period at all — even an empty DRAFT one created by mistake
+    // was permanent. Restricted to DRAFT with zero payslips so an approved/paid period (which
+    // may already have a Salaries Expense recorded against it) always keeps its audit trail.
+    @PreAuthorize("@perm.has('payroll:reverse')")
+    @DeleteMapping("/periods/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deletePeriod(@PathVariable UUID id) {
+        PayrollPeriod p = periodRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Period not found"));
+        if (p.getStatus() != PayrollStatus.DRAFT) {
+            throw new IllegalArgumentException("Only draft periods can be deleted — approved/paid periods are kept for the audit trail.");
+        }
+        if (!payslipRepo.findByPeriodId(id).isEmpty()) {
+            throw new IllegalArgumentException("Cannot delete a period that has payslips — remove the payslips first.");
+        }
+        audit.log("DELETE_PAYROLL_PERIOD", "PayrollPeriod", id.toString(), "label " + p.getPeriodLabel());
+        periodRepo.deleteById(id);
+    }
+
     @PreAuthorize("@perm.has('payroll:view') or @perm.has('payroll:manage')")
     @GetMapping("/payslips")
     public List<Payslip> listPayslips(
