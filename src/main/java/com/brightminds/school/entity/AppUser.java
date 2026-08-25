@@ -46,6 +46,14 @@ public class AppUser {
     @Builder.Default
     private boolean mustChangePassword = false;
 
+    // Self-service "forgot password" — a single-use, time-limited token mailed to the user
+    // (see PasswordResetService). Null/expired means no reset is in progress.
+    @Column(name = "reset_token")
+    private String resetToken;
+
+    @Column(name = "reset_token_expires_at")
+    private Instant resetTokenExpiresAt;
+
     // orphanRemoval is required here, not just cascade=ALL: UserManagementController's
     // role-update endpoint does roles.clear() + re-add on an existing user, and UserRole.user
     // is NOT NULL — without orphanRemoval, Hibernate tries to null out the removed rows'

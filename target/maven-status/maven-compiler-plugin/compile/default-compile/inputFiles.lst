@@ -25,6 +25,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\control
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\GuardianController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\HealthController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\HomeworkController.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\InquiryController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\InventoryController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\LeaveController.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\controller\LibraryController.java
@@ -89,6 +90,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\GuardianPupil.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\HealthRecord.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Homework.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Inquiry.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\InventoryItem.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\InventoryTxn.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\entity\Invoice.java
@@ -143,6 +145,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\reposit
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\GuardianRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\HealthRecordRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\HomeworkRepository.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\InquiryRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\InventoryItemRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\InventoryTxnRepository.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\repository\InvoiceRepository.java
@@ -187,6 +190,7 @@ F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\GlobalExceptionHandler.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\GuardianAccountService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\ParentPortalService.java
+F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PasswordResetService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PermissionService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PromotionService.java
 F:\Mr Chazanga\bright-minds-backend\src\main\java\com\brightminds\school\service\PupilService.java

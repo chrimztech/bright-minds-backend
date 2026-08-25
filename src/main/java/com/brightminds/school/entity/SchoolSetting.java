@@ -37,6 +37,10 @@ public class SchoolSetting {
     private String phone;
     private String email;
     private String website;
+
+    @Column(name = "facebook_url")
+    private String facebookUrl;
+
     private String motto;
 
     @Column(name = "head_teacher")
@@ -111,6 +115,25 @@ public class SchoolSetting {
 
     @Column(name = "login_button_url")
     private String loginButtonUrl;
+
+    // Public landing page (the page served at "/", before Sign in) — editable by SUPER_ADMIN
+    // only, exposed pre-login via PublicController#landing.
+    @Column(name = "landing_hero_heading")
+    private String landingHeroHeading;
+
+    @Column(name = "landing_hero_subtext", columnDefinition = "TEXT")
+    private String landingHeroSubtext;
+
+    // JSON array of image URLs, rotated as a hero background carousel.
+    @Column(name = "landing_hero_images", columnDefinition = "TEXT")
+    @Builder.Default
+    private String landingHeroImages = "[]";
+
+    @Column(name = "landing_about_title")
+    private String landingAboutTitle;
+
+    @Column(name = "landing_about_body", columnDefinition = "TEXT")
+    private String landingAboutBody;
 
     @UpdateTimestamp
     @Column(name = "updated_at")

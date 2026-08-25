@@ -89,6 +89,11 @@ public class UserManagementController {
     public void resetPassword(@PathVariable UUID id, @RequestBody ResetPasswordReq req) {
         AppUser user = userRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setPasswordHash(passwordEncoder.encode(req.getPassword()));
+        // The reset-password dialog's own copy tells the admin "the user will be prompted to
+        // change this password on their next login" — this flag is what actually makes that
+        // true. Staff/Guardian account resets (StaffAccountService, GuardianAccountService)
+        // already set it; this generic AppUser path was the one that didn't.
+        user.setMustChangePassword(true);
         userRepo.save(user);
         audit.log("RESET_PASSWORD", "AppUser", id.toString(), null);
     }

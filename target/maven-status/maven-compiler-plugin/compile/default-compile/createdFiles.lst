@@ -8,6 +8,7 @@ com\brightminds\school\service\DashboardService.class
 com\brightminds\school\entity\Message.class
 com\brightminds\school\entity\CanteenSale.class
 com\brightminds\school\repository\PaymentRepository.class
+com\brightminds\school\entity\Inquiry$InquiryBuilder.class
 com\brightminds\school\controller\FileUploadController$UploadResponse.class
 com\brightminds\school\security\CustomUserDetails.class
 com\brightminds\school\entity\enums\PaymentMethod.class
@@ -114,6 +115,7 @@ com\brightminds\school\controller\GuardianController$ParentPaymentRequest.class
 com\brightminds\school\entity\Role.class
 com\brightminds\school\dto\ParentPortalDto$TeacherInfo$TeacherInfoBuilder.class
 com\brightminds\school\entity\PurchaseOrder.class
+com\brightminds\school\repository\InquiryRepository.class
 com\brightminds\school\controller\LibraryController$BookRequest.class
 com\brightminds\school\controller\ProcurementController$OrderReq.class
 com\brightminds\school\repository\GuardianPupilRepository.class
@@ -199,6 +201,7 @@ com\brightminds\school\entity\Announcement.class
 com\brightminds\school\dto\ParentPortalDto$ReportCard.class
 com\brightminds\school\entity\SchoolSetting.class
 com\brightminds\school\controller\PayrollController.class
+com\brightminds\school\entity\Inquiry.class
 com\brightminds\school\controller\TimetableController.class
 com\brightminds\school\controller\AuthController$ChangePasswordReq.class
 com\brightminds\school\entity\Term$TermBuilder.class

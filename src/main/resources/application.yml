@@ -62,6 +62,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}  # 24 hours
+  # Base URL used to build the link inside password-reset emails — must point at wherever the
+  # frontend is actually served from, not the backend's own host:port.
+  frontend-url: ${FRONTEND_URL:http://localhost:8080}
   bootstrap-admin:
     email: ${BOOTSTRAP_ADMIN_EMAIL:admin@school.demo}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:Admin123!}

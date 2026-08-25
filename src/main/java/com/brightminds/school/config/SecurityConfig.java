@@ -48,6 +48,15 @@ public class SecurityConfig {
                         // the login screen itself, before any session exists — see PublicController
                         // for why this can't just be GET /settings (which requires authentication).
                         .requestMatchers(HttpMethod.GET, "/public/**").permitAll()
+                        // A visitor submitting the landing page's Inquiries form has nothing to
+                        // authenticate against — kept to this one specific POST route (not a
+                        // blanket /public/** permitAll for all methods) so a future write endpoint
+                        // added under /public/** doesn't become accidentally public by pattern.
+                        .requestMatchers(HttpMethod.POST, "/public/inquiries").permitAll()
+                        // Forgot/reset password: someone who can't log in has nothing to
+                        // authenticate against either — same narrow-allowlist reasoning as
+                        // /public/inquiries above.
+                        .requestMatchers(HttpMethod.POST, "/public/forgot-password", "/public/reset-password").permitAll()
                         // Uploaded images (staff photos/signatures, etc.) are rendered via plain
                         // <img> tags — including inside printed documents — which never send an
                         // Authorization header, so reading them must not require a session.

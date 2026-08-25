@@ -42,6 +42,7 @@ public class SettingsController {
         if (req.phone != null) s.setPhone(req.phone);
         if (req.email != null) s.setEmail(req.email);
         if (req.website != null) s.setWebsite(req.website);
+        if (req.facebookUrl != null) s.setFacebookUrl(req.facebookUrl);
         if (req.motto != null) s.setMotto(req.motto);
         if (req.headTeacher != null) s.setHeadTeacher(req.headTeacher);
         if (req.headTeacherSignatureUrl != null) s.setHeadTeacherSignatureUrl(req.headTeacherSignatureUrl);
@@ -83,6 +84,30 @@ public class SettingsController {
         return repo.save(s);
     }
 
+    // Public landing page content — same SUPER_ADMIN-only rationale as updateDashboard above,
+    // kept as its own endpoint rather than more fields bolted onto /settings/dashboard since
+    // it's a genuinely separate page (the pre-login "/") with its own editor surface.
+    @PutMapping("/landing")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public SchoolSetting updateLanding(@RequestBody LandingRequest req) {
+        SchoolSetting s = get();
+        s.setLandingHeroHeading(req.heroHeading);
+        s.setLandingHeroSubtext(req.heroSubtext);
+        s.setLandingHeroImages(req.heroImages != null ? req.heroImages : "[]");
+        s.setLandingAboutTitle(req.aboutTitle);
+        s.setLandingAboutBody(req.aboutBody);
+        return repo.save(s);
+    }
+
+    @Data
+    public static class LandingRequest {
+        private String heroHeading;
+        private String heroSubtext;
+        private String heroImages;
+        private String aboutTitle;
+        private String aboutBody;
+    }
+
     @Data
     public static class DashboardRequest {
         private String heroHeading;
@@ -109,6 +134,7 @@ public class SettingsController {
         private String phone;
         private String email;
         private String website;
+        private String facebookUrl;
         private String motto;
         private String headTeacher;
         private String headTeacherSignatureUrl;
