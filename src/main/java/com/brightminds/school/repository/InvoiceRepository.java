@@ -18,4 +18,5 @@ public interface InvoiceRepository extends JpaRepository<Invoice, UUID> {
     boolean existsByInvoiceNo(String invoiceNo);
     boolean existsByPupilIdAndFeeItemId(UUID pupilId, UUID feeItemId);
     List<Invoice> findByDueDateBeforeAndStatusInAndLateFeeAppliedFalse(LocalDate date, List<InvoiceStatus> statuses);
+    List<Invoice> findByFeeItem_CategoryOrderByCreatedAtDesc(String category);
 }

@@ -11,6 +11,7 @@ import java.util.UUID;
 public interface FeeItemRepository extends JpaRepository<FeeItem, UUID> {
     List<FeeItem> findByTerm_Id(UUID termId);
     List<FeeItem> findBySchoolClassId(UUID classId);
+    List<FeeItem> findByCategoryOrderByNameAsc(String category);
     Optional<FeeItem> findByCategoryAndNameAndTerm_Id(String category, String name, UUID termId);
     Optional<FeeItem> findByCategoryAndNameAndTermIsNull(String category, String name);
 
