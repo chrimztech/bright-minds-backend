@@ -47,8 +47,16 @@ public class ReportCardController {
                             .orElseThrow(() -> new EntityNotFoundException("Exam not found"));
                     return ReportCardRemark.builder().pupil(pupil).exam(exam).build();
                 });
+        // A class-scoped teacher is the "class teacher" for their own class's pupils, so their
+        // remark is theirs to set — but nothing stopped them from also overwriting the head
+        // teacher's remark, which defeats the point of having two separately-attributed
+        // signatures on the report card. Only an unrestricted (admin-tier) caller may set it;
+        // a restricted caller's value for that field is silently dropped, not just left blank,
+        // so a class teacher can't accidentally clear a head teacher's existing remark either.
         remark.setClassTeacherRemark(req.getClassTeacherRemark());
-        remark.setHeadTeacherRemark(req.getHeadTeacherRemark());
+        if (!scopeService.isRestricted(auth)) {
+            remark.setHeadTeacherRemark(req.getHeadTeacherRemark());
+        }
         return remarkRepo.save(remark);
     }
 

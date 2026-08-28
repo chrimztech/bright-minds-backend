@@ -8,7 +8,7 @@ spring:
     # this repo's history, which breaks every DB-dependent feature (including role updates)
     # the moment the backend can't connect at all. If your Postgres really does move to a
     # different port, update this deliberately rather than guessing.
-    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5433/bright_minds_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:11111111}
     driver-class-name: org.postgresql.Driver
@@ -38,8 +38,11 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      # 5MB was fine for a single staff photo/signature, but a full-system backup archive
+      # (every uploaded file plus the database dump) restored via /admin/backup/restore
+      # needs far more headroom.
+      max-file-size: 500MB
+      max-request-size: 500MB
 
   mail:
     host: smtp.gmail.com
@@ -71,6 +74,13 @@ app:
     full-name: ${BOOTSTRAP_ADMIN_NAME:System Administrator}
   backup:
     pg-dump-path: ${PG_DUMP_PATH:pg_dump}
+    psql-path: ${PSQL_PATH:psql}
+    # Where the nightly scheduled backup and pre-restore safety snapshots are saved on disk
+    # (separate from anything a user explicitly downloads, which never touches this folder).
+    dir: ${BACKUP_DIR:./backups}
+    # How many of the newest snapshots in that folder to keep — older ones are pruned after
+    # each nightly run, since every snapshot bundles every uploaded file and these add up.
+    retention: ${BACKUP_RETENTION:14}
   uploads:
     dir: ${UPLOADS_DIR:./uploads}
     public-base-url: ${UPLOADS_PUBLIC_URL:/api/uploads}

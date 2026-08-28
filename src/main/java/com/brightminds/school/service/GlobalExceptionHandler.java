@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.stream.Collectors;
 
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
         log.warn("Data integrity violation: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(ApiError.of(409, "This action conflicts with existing data (e.g. a duplicate or referenced record)"));
+    }
+
+    // Without this, the catch-all Exception handler below intercepts every ResponseStatusException
+    // (thrown explicitly all over the codebase, e.g. BackupController, the rate limiter) and
+    // reports it as a generic 500 instead of the status/message the caller deliberately chose.
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiError> handleResponseStatus(ResponseStatusException ex) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiError.of(ex.getStatusCode().value(), ex.getReason()));
     }
 
     @ExceptionHandler(Exception.class)

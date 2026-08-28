@@ -1,28 +1,27 @@
 package com.brightminds.school.controller;
 
 import com.brightminds.school.repository.*;
+import com.brightminds.school.service.AuditService;
+import com.brightminds.school.service.BackupService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/admin/backup")
@@ -52,70 +51,88 @@ public class BackupController {
     private final RoleRepository roles;
     private final PermissionRepository permissions;
     private final AuditLogRepository auditLogs;
-
-    @Value("${spring.datasource.url}")
-    private String datasourceUrl;
-    @Value("${spring.datasource.username}")
-    private String datasourceUsername;
-    @Value("${spring.datasource.password}")
-    private String datasourcePassword;
-    @Value("${app.backup.pg-dump-path}")
-    private String pgDumpPath;
-
-    private static final Pattern JDBC_URL = Pattern.compile("jdbc:postgresql://([^:/]+)(?::(\\d+))?/([^?]+)");
+    private final AuditService audit;
+    private final BackupService backupService;
 
     @GetMapping("/sql")
     public ResponseEntity<ByteArrayResource> downloadSql() {
-        Matcher m = JDBC_URL.matcher(datasourceUrl);
-        if (!m.matches()) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Could not parse datasource URL for backup: " + datasourceUrl);
-        }
-        String host = m.group(1);
-        String port = m.group(2) != null ? m.group(2) : "5432";
-        String dbName = m.group(3);
+        byte[] data = backupService.runPgDump(backupService.parseDbTarget());
+        String filename = "school-database-" + DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HHmmss")
+                .format(java.time.LocalDateTime.now()) + ".sql";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/sql"))
+                .body(new ByteArrayResource(data));
+    }
 
-        Path tmp;
-        try {
-            tmp = Files.createTempFile("school-backup-", ".sql");
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Could not create temp file for backup", e);
+    // The one backup meant for disaster recovery: the full database (schema + every row) AND
+    // every uploaded file (staff photos/signatures, documents, hero images, etc.) bundled into
+    // a single archive — restoring only the database would leave every image and document
+    // reference in the app pointing at files that no longer exist.
+    @GetMapping("/full")
+    public ResponseEntity<ByteArrayResource> downloadFull() {
+        byte[] zip = backupService.buildFullBackupZip();
+        String filename = "school-full-backup-" + DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HHmmss")
+                .format(java.time.LocalDateTime.now()) + ".zip";
+        audit.log("DOWNLOAD_BACKUP", "System", null, "Full backup (database + uploaded files)");
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(new ByteArrayResource(zip));
+    }
+
+    // Every automatic snapshot the system has taken on its own — the nightly scheduled backup,
+    // and the safety-net snapshot restore() below always takes of the *current* state right
+    // before overwriting it. Surfacing these means a bad restore is itself always recoverable,
+    // and nobody has to remember to click "Download full backup" for the nightly one to exist.
+    @GetMapping("/scheduled")
+    public List<BackupService.SnapshotInfo> listScheduled() {
+        return backupService.listSnapshots();
+    }
+
+    @GetMapping("/scheduled/{filename}")
+    public ResponseEntity<ByteArrayResource> downloadScheduled(@PathVariable String filename) {
+        if (filename.contains("/") || filename.contains("\\") || filename.contains("..")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid filename");
         }
+        Path path = backupService.resolveSnapshot(filename);
+        byte[] data;
         try {
-            ProcessBuilder pb = new ProcessBuilder(
-                    pgDumpPath, "-h", host, "-p", port, "-U", datasourceUsername,
-                    "--no-owner", "--no-privileges", "-F", "p", "-f", tmp.toString(), dbName);
-            pb.environment().put("PGPASSWORD", datasourcePassword);
-            pb.redirectErrorStream(true);
-            Process proc = pb.start();
-            String log = new String(proc.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            boolean finished = proc.waitFor(120, TimeUnit.SECONDS);
-            if (!finished) {
-                proc.destroyForcibly();
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                        "pg_dump timed out after 120s");
-            }
-            if (proc.exitValue() != 0) {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                        "pg_dump failed (exit " + proc.exitValue() + "): " + log);
-            }
-            byte[] data = Files.readAllBytes(tmp);
-            String filename = "school-full-backup-" + DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HHmmss")
-                    .format(java.time.LocalDateTime.now()) + ".sql";
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType("application/sql"))
-                    .body(new ByteArrayResource(data));
+            data = Files.readAllBytes(path);
         } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Could not run pg_dump (is it installed and on PATH? override with PG_DUMP_PATH): " + e.getMessage(), e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Backup interrupted", e);
-        } finally {
-            try { Files.deleteIfExists(tmp); } catch (IOException ignored) { }
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not read backup file", e);
         }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(new ByteArrayResource(data));
+    }
+
+    // Restoring is the one genuinely destructive action in this whole controller — it drops
+    // and recreates the live schema and overwrites uploaded files — so it's deliberately kept
+    // on its own stricter permission, separate from the read-only "can make a backup"
+    // permission everyone with backup:create has.
+    @PreAuthorize("@perm.has('backup:restore')")
+    @PostMapping("/restore")
+    public Map<String, Object> restore(@RequestParam("file") MultipartFile file) {
+        // Whatever is about to be overwritten gets saved first — if the uploaded archive turns
+        // out to be the wrong one, or restoring it goes badly, this snapshot is what undoes it.
+        Path safetyNet = backupService.saveSnapshot("pre-restore");
+        BackupService.RestoreResult result;
+        try {
+            result = backupService.restoreFromZip(file.getInputStream());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Could not read the uploaded file: " + e.getMessage(), e);
+        }
+        audit.log("RESTORE_BACKUP", "System", null,
+                result.filesRestored() + " file(s) restored; safety snapshot saved as " + safetyNet.getFileName());
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("filesRestored", result.filesRestored());
+        response.put("restoredAt", java.time.Instant.now().toString());
+        response.put("safetyBackup", safetyNet.getFileName().toString());
+        response.put("note", "Restart the backend now so every service picks up the restored data cleanly.");
+        return response;
     }
 
     @GetMapping

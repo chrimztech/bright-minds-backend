@@ -1,3 +1,7 @@
 # User-uploaded files (staff photos/signatures, school logo, etc.) — local disk storage,
 # not meant to be version-controlled.
 /uploads/
+
+# Local secrets (SMTP credentials, etc.) loaded as environment variables for dev runs —
+# never commit real credentials to source control.
+.env
