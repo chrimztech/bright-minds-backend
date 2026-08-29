@@ -1,11 +1,11 @@
 package com.brightminds.school.controller;
 
-import com.brightminds.school.entity.Exam;
 import com.brightminds.school.entity.Pupil;
 import com.brightminds.school.entity.ReportCardRemark;
-import com.brightminds.school.repository.ExamRepository;
+import com.brightminds.school.entity.Term;
 import com.brightminds.school.repository.PupilRepository;
 import com.brightminds.school.repository.ReportCardRemarkRepository;
+import com.brightminds.school.repository.TermRepository;
 import com.brightminds.school.service.ClassScopeService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,25 +27,25 @@ public class ReportCardController {
 
     private final ReportCardRemarkRepository remarkRepo;
     private final PupilRepository pupilRepo;
-    private final ExamRepository examRepo;
+    private final TermRepository termRepo;
     private final ClassScopeService scopeService;
 
     @GetMapping
-    public ReportCardRemark get(@RequestParam UUID pupilId, @RequestParam UUID examId, Authentication auth) {
+    public ReportCardRemark get(@RequestParam UUID pupilId, @RequestParam UUID termId, Authentication auth) {
         assertPupilInScope(pupilId, auth);
-        return remarkRepo.findByPupilIdAndExamId(pupilId, examId).orElse(null);
+        return remarkRepo.findByPupilIdAndTermId(pupilId, termId).orElse(null);
     }
 
     @PutMapping
     public ReportCardRemark save(@RequestBody RemarkRequest req, Authentication auth) {
         assertPupilInScope(req.getPupilId(), auth);
-        ReportCardRemark remark = remarkRepo.findByPupilIdAndExamId(req.getPupilId(), req.getExamId())
+        ReportCardRemark remark = remarkRepo.findByPupilIdAndTermId(req.getPupilId(), req.getTermId())
                 .orElseGet(() -> {
                     Pupil pupil = pupilRepo.findById(req.getPupilId())
                             .orElseThrow(() -> new EntityNotFoundException("Pupil not found"));
-                    Exam exam = examRepo.findById(req.getExamId())
-                            .orElseThrow(() -> new EntityNotFoundException("Exam not found"));
-                    return ReportCardRemark.builder().pupil(pupil).exam(exam).build();
+                    Term term = termRepo.findById(req.getTermId())
+                            .orElseThrow(() -> new EntityNotFoundException("Term not found"));
+                    return ReportCardRemark.builder().pupil(pupil).term(term).build();
                 });
         // A class-scoped teacher is the "class teacher" for their own class's pupils, so their
         // remark is theirs to set — but nothing stopped them from also overwriting the head
@@ -70,7 +70,7 @@ public class ReportCardController {
     @Data
     public static class RemarkRequest {
         private UUID pupilId;
-        private UUID examId;
+        private UUID termId;
         private String classTeacherRemark;
         private String headTeacherRemark;
     }

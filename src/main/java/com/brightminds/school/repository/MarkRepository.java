@@ -25,4 +25,12 @@ public interface MarkRepository extends JpaRepository<Mark, UUID> {
             ORDER BY e.examDate DESC, e.name, m.subject.name
             """)
     List<Mark> findReportCardMarks(@Param("pupilId") UUID pupilId);
+
+    @Query("""
+            SELECT m FROM Mark m
+            JOIN FETCH m.exam e
+            JOIN FETCH m.subject
+            WHERE e.term.id = :termId AND m.pupil.schoolClass.id = :classId
+            """)
+    List<Mark> findByTermIdAndClassId(@Param("termId") UUID termId, @Param("classId") UUID classId);
 }

@@ -22,8 +22,8 @@ public class ReportCardRemark {
     private Pupil pupil;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "exam_id", nullable = false)
-    private Exam exam;
+    @JoinColumn(name = "term_id", nullable = false)
+    private Term term;
 
     @Column(name = "class_teacher_remark", columnDefinition = "TEXT")
     private String classTeacherRemark;

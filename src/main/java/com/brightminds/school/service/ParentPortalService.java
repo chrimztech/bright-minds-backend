@@ -2,6 +2,7 @@ package com.brightminds.school.service;
 
 import com.brightminds.school.dto.ParentPortalDto;
 import com.brightminds.school.entity.*;
+import com.brightminds.school.entity.enums.AssessmentType;
 import com.brightminds.school.entity.enums.AttendanceStatus;
 import com.brightminds.school.repository.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,12 @@ public class ParentPortalService {
     private final AcademicYearRepository academicYearRepo;
     private final PupilEnrollmentRepository enrollmentRepo;
     private final ReportCardRemarkRepository remarkRepo;
+
+    // Assessment types that participate in a term report card's 4-column pivot. Ad-hoc exams
+    // (MOCK, OPENER, OTHER) can still exist and carry marks, but they're analysis-only — they
+    // never appear on a printed report card, admin or parent.
+    private static final Set<AssessmentType> TERM_ASSESSMENT_TYPES = EnumSet.of(
+            AssessmentType.TEST_1, AssessmentType.TEST_2, AssessmentType.MID_TERM, AssessmentType.END_OF_TERM);
 
     public Guardian currentGuardian(UserDetails principal) {
         AppUser user = userRepo.findByEmail(principal.getUsername()).orElse(null);
@@ -108,11 +116,10 @@ public class ParentPortalService {
                 .schoolClass(classInfo(pupil.getSchoolClass()))
                 .attendance(attendanceSummary(records, from, to))
                 .latestPerformance(latest == null ? null : ParentPortalDto.PerformanceSummary.builder()
-                        .examId(latest.getExamId())
-                        .examName(latest.getExamName())
+                        .termId(latest.getTermId())
                         .termName(latest.getTermName())
                         .academicYearName(latest.getAcademicYearName())
-                        .averagePercentage(latest.getAveragePercentage())
+                        .averagePercentage(latest.getTermAveragePercentage())
                         .grade(latest.getOverallGrade())
                         .build())
                 .reportCardCount(reportCards.size())
@@ -120,78 +127,163 @@ public class ParentPortalService {
     }
 
     private List<ParentPortalDto.ReportCard> buildReportCards(UUID pupilId) {
-        List<Mark> marks = markRepo.findReportCardMarks(pupilId);
-        Map<UUID, List<Mark>> byExam = marks.stream().collect(Collectors.groupingBy(
-                mark -> mark.getExam().getId(), LinkedHashMap::new, Collectors.toList()));
+        List<Mark> marks = markRepo.findReportCardMarks(pupilId).stream()
+                .filter(m -> m.getExam().getTerm() != null
+                        && TERM_ASSESSMENT_TYPES.contains(m.getExam().getAssessmentType()))
+                .toList();
+        Map<UUID, List<Mark>> byTerm = marks.stream().collect(Collectors.groupingBy(
+                m -> m.getExam().getTerm().getId(), LinkedHashMap::new, Collectors.toList()));
 
-        List<ParentPortalDto.ReportCard> cards = byExam.values().stream()
-                .map(this::reportCard)
-                .collect(Collectors.toCollection(ArrayList::new));
-        cards.sort(Comparator.comparing(ParentPortalDto.ReportCard::getExamDate,
-                Comparator.nullsLast(Comparator.reverseOrder())));
-        return cards;
+        return byTerm.values().stream()
+                .sorted(Comparator.comparing(
+                        (List<Mark> marksInTerm) -> marksInTerm.get(0).getExam().getTerm().getStartDate(),
+                        Comparator.nullsLast(Comparator.reverseOrder())))
+                .map(this::termReportCard)
+                .toList();
     }
 
-    private ParentPortalDto.ReportCard reportCard(List<Mark> marks) {
-        Mark first = marks.get(0);
+    private ParentPortalDto.ReportCard termReportCard(List<Mark> marksInTerm) {
+        Mark first = marksInTerm.get(0);
         Pupil pupil = first.getPupil();
-        Exam exam = first.getExam();
-        Term term = exam.getTerm();
-        AcademicYear year = term != null ? term.getAcademicYear() : null;
-        double outOf = exam.getOutOf() > 0 ? exam.getOutOf() : 100;
+        Term term = first.getExam().getTerm();
+        AcademicYear year = term.getAcademicYear();
 
-        List<ParentPortalDto.SubjectResult> subjects = marks.stream().map(mark -> {
-            double percentage = percentage(mark.getScore(), outOf);
-            return ParentPortalDto.SubjectResult.builder()
-                    .subjectId(mark.getSubject().getId())
-                    .subjectName(mark.getSubject().getName())
-                    .score(mark.getScore())
-                    .outOf(outOf)
-                    .percentage(percentage)
-                    .grade(gradeFor(percentage))
-                    .comment(mark.getComment())
-                    .build();
-        }).toList();
+        Map<UUID, List<Mark>> bySubject = marksInTerm.stream().collect(Collectors.groupingBy(
+                m -> m.getSubject().getId(), LinkedHashMap::new, Collectors.toList()));
+        List<ParentPortalDto.SubjectPivotResult> subjects = bySubject.values().stream()
+                .map(this::subjectPivot)
+                .sorted(Comparator.comparing(ParentPortalDto.SubjectPivotResult::getSubjectName))
+                .toList();
 
-        double totalScore = marks.stream().mapToDouble(Mark::getScore).sum();
-        double totalOutOf = outOf * marks.size();
-        double average = percentage(totalScore, totalOutOf);
-        LocalDate attendanceFrom = term != null ? term.getStartDate()
-                : exam.getExamDate() != null ? exam.getExamDate().minusDays(90) : LocalDate.now().minusDays(90);
-        LocalDate attendanceTo = term != null ? term.getEndDate()
-                : exam.getExamDate() != null ? exam.getExamDate() : LocalDate.now();
-        LocalDate classDate = exam.getExamDate() != null ? exam.getExamDate() : attendanceTo;
+        double termAverage = termAverageFor(marksInTerm);
+        LocalDate attendanceFrom = term.getStartDate();
+        LocalDate attendanceTo = term.getEndDate();
+        LocalDate classDate = attendanceTo != null ? attendanceTo : LocalDate.now();
         SchoolClass reportClass = enrollmentRepo
                 .findFirstByPupilIdAndStartedOnLessThanEqualOrderByStartedOnDesc(pupil.getId(), classDate)
                 .map(PupilEnrollment::getSchoolClass)
                 .orElse(pupil.getSchoolClass());
 
-        ReportCardRemark remark = remarkRepo.findByPupilIdAndExamId(pupil.getId(), exam.getId()).orElse(null);
+        ReportCardRemark remark = remarkRepo.findByPupilIdAndTermId(pupil.getId(), term.getId()).orElse(null);
+        int[] rank = classRank(term, reportClass, pupil.getId());
 
         return ParentPortalDto.ReportCard.builder()
                 .pupilId(pupil.getId())
                 .pupilName(pupil.getFullName())
                 .admissionNo(pupil.getAdmissionNo())
-                .examId(exam.getId())
-                .examName(exam.getName())
-                .assessmentType(exam.getAssessmentType() != null ? exam.getAssessmentType().name() : null)
-                .examDate(exam.getExamDate())
-                .termId(term != null ? term.getId() : null)
-                .termName(term != null ? term.getName() : null)
+                .termId(term.getId())
+                .termName(term.getName())
                 .academicYearId(year != null ? year.getId() : null)
                 .academicYearName(year != null ? year.getName() : null)
                 .schoolClass(classInfo(reportClass))
                 .subjects(subjects)
-                .totalScore(totalScore)
-                .totalOutOf(totalOutOf)
-                .averagePercentage(average)
-                .overallGrade(gradeFor(average))
+                .termAveragePercentage(termAverage)
+                .overallGrade(gradeFor(termAverage))
                 .attendance(attendanceSummary(
                         attendanceRepo.findByPupilIdAndDateBetween(pupil.getId(), attendanceFrom, attendanceTo),
                         attendanceFrom, attendanceTo))
                 .classTeacherRemark(remark != null ? remark.getClassTeacherRemark() : null)
                 .headTeacherRemark(remark != null ? remark.getHeadTeacherRemark() : null)
+                .position(rank == null ? null : rank[0])
+                .classSize(rank == null ? null : rank[1])
                 .build();
+    }
+
+    private ParentPortalDto.SubjectPivotResult subjectPivot(List<Mark> marksForSubject) {
+        Mark any = marksForSubject.get(0);
+        Map<AssessmentType, Mark> byType = marksForSubject.stream()
+                .collect(Collectors.toMap(m -> m.getExam().getAssessmentType(), m -> m, (a, b) -> b));
+        Double average = subjectAverageOnly(marksForSubject);
+
+        return ParentPortalDto.SubjectPivotResult.builder()
+                .subjectId(any.getSubject().getId())
+                .subjectName(any.getSubject().getName())
+                .test1(cellFor(byType.get(AssessmentType.TEST_1)))
+                .test2(cellFor(byType.get(AssessmentType.TEST_2)))
+                .midTerm(cellFor(byType.get(AssessmentType.MID_TERM)))
+                .endOfTerm(cellFor(byType.get(AssessmentType.END_OF_TERM)))
+                .averagePercentage(average)
+                .grade(average != null ? gradeFor(average) : null)
+                .comment(pickComment(byType))
+                .build();
+    }
+
+    private ParentPortalDto.AssessmentCell cellFor(Mark mark) {
+        if (mark == null) return null;
+        double outOf = mark.getExam().getOutOf() > 0 ? mark.getExam().getOutOf() : 100;
+        return ParentPortalDto.AssessmentCell.builder()
+                .score(mark.getScore())
+                .outOf(outOf)
+                .percentage(percentage(mark.getScore(), outOf))
+                .build();
+    }
+
+    // Up to 4 candidate comments (one per assessment) collapse into the single "Comment" column
+    // the paper report card has per subject — the most recent/most authoritative assessment's
+    // comment wins over an earlier one.
+    private String pickComment(Map<AssessmentType, Mark> byType) {
+        for (AssessmentType type : List.of(AssessmentType.END_OF_TERM, AssessmentType.MID_TERM,
+                AssessmentType.TEST_2, AssessmentType.TEST_1)) {
+            Mark m = byType.get(type);
+            if (m != null && m.getComment() != null && !m.getComment().isBlank()) return m.getComment();
+        }
+        return null;
+    }
+
+    // A pupil's term average = mean of their subjects' own averages (not sum-of-scores, since
+    // different assessments can have different outOf). Shared by termReportCard (via
+    // subjectAverageOnly, for display) and classRank (for ranking), so a pupil's own report card
+    // and their position among classmates can never disagree about what their average actually is.
+    private double termAverageFor(List<Mark> marksInTerm) {
+        List<Double> subjectAverages = marksInTerm.stream()
+                .collect(Collectors.groupingBy(m -> m.getSubject().getId()))
+                .values().stream()
+                .map(this::subjectAverageOnly)
+                .filter(Objects::nonNull)
+                .toList();
+        return subjectAverages.isEmpty() ? 0
+                : round(subjectAverages.stream().mapToDouble(Double::doubleValue).average().orElse(0));
+    }
+
+    // A subject's average = mean of whichever of the 4 assessment percentages are present —
+    // missing assessments are excluded, never treated as zero.
+    private Double subjectAverageOnly(List<Mark> marksForSubject) {
+        Map<AssessmentType, Mark> byType = marksForSubject.stream()
+                .collect(Collectors.toMap(m -> m.getExam().getAssessmentType(), m -> m, (a, b) -> b));
+        List<Double> present = Stream.of(AssessmentType.TEST_1, AssessmentType.TEST_2,
+                        AssessmentType.MID_TERM, AssessmentType.END_OF_TERM)
+                .map(byType::get)
+                .filter(Objects::nonNull)
+                .map(m -> percentage(m.getScore(), m.getExam().getOutOf() > 0 ? m.getExam().getOutOf() : 100))
+                .toList();
+        return present.isEmpty() ? null
+                : round(present.stream().mapToDouble(Double::doubleValue).average().orElse(0));
+    }
+
+    // Ranks this pupil's term average against classmates who have marks the same term — mirrors
+    // the admin report card's ranking. Matched by the pupil's *current* class (not historical
+    // enrollment at term time) for consistency with how the admin-facing ranking already does it.
+    private int[] classRank(Term term, SchoolClass reportClass, UUID pupilId) {
+        if (reportClass == null) return null;
+        List<Mark> classMarks = markRepo.findByTermIdAndClassId(term.getId(), reportClass.getId()).stream()
+                .filter(m -> TERM_ASSESSMENT_TYPES.contains(m.getExam().getAssessmentType()))
+                .toList();
+        if (classMarks.isEmpty()) return null;
+
+        Map<UUID, List<Mark>> byPupil = classMarks.stream()
+                .collect(Collectors.groupingBy(m -> m.getPupil().getId(), LinkedHashMap::new, Collectors.toList()));
+
+        List<Map.Entry<UUID, Double>> averages = byPupil.entrySet().stream()
+                .map(e -> Map.entry(e.getKey(), termAverageFor(e.getValue())))
+                .sorted(Comparator.comparingDouble((Map.Entry<UUID, Double> e) -> e.getValue()).reversed())
+                .toList();
+
+        for (int i = 0; i < averages.size(); i++) {
+            if (averages.get(i).getKey().equals(pupilId)) {
+                return new int[] { i + 1, averages.size() };
+            }
+        }
+        return null;
     }
 
     private ParentPortalDto.AttendanceSummary attendanceSummary(

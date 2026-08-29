@@ -5,3 +5,4 @@
 # Local secrets (SMTP credentials, etc.) loaded as environment variables for dev runs —
 # never commit real credentials to source control.
 .env
+backups/scheduled-2026-08-29T015950.zip

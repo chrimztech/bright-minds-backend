@@ -74,8 +74,7 @@ public final class ParentPortalDto {
 
     @Data @Builder
     public static class PerformanceSummary {
-        private UUID examId;
-        private String examName;
+        private UUID termId;
         private String termName;
         private String academicYearName;
         private double averagePercentage;
@@ -87,32 +86,41 @@ public final class ParentPortalDto {
         private UUID pupilId;
         private String pupilName;
         private String admissionNo;
-        private UUID examId;
-        private String examName;
-        private String assessmentType;
-        private LocalDate examDate;
         private UUID termId;
         private String termName;
         private UUID academicYearId;
         private String academicYearName;
         private ClassInfo schoolClass;
-        private List<SubjectResult> subjects;
-        private double totalScore;
-        private double totalOutOf;
-        private double averagePercentage;
+        private List<SubjectPivotResult> subjects;
+        private double termAveragePercentage;
         private String overallGrade;
         private AttendanceSummary attendance;
         private String classTeacherRemark;
         private String headTeacherRemark;
+        // Rank of this pupil's term average among their classmates who also have marks this
+        // term — null when the pupil has no resolvable class (nothing to rank against).
+        private Integer position;
+        private Integer classSize;
     }
 
     @Data @Builder
-    public static class SubjectResult {
-        private UUID subjectId;
-        private String subjectName;
+    public static class AssessmentCell {
         private double score;
         private double outOf;
         private double percentage;
+    }
+
+    @Data @Builder
+    public static class SubjectPivotResult {
+        private UUID subjectId;
+        private String subjectName;
+        private AssessmentCell test1;
+        private AssessmentCell test2;
+        private AssessmentCell midTerm;
+        private AssessmentCell endOfTerm;
+        // Mean of whichever of the 4 cells above are present — null only if a subject row
+        // somehow exists with zero populated cells, which shouldn't happen in practice.
+        private Double averagePercentage;
         private String grade;
         private String comment;
     }

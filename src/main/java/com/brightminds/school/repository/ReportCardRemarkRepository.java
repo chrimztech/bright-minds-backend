@@ -6,5 +6,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ReportCardRemarkRepository extends JpaRepository<ReportCardRemark, UUID> {
-    Optional<ReportCardRemark> findByPupilIdAndExamId(UUID pupilId, UUID examId);
+    Optional<ReportCardRemark> findByPupilIdAndTermId(UUID pupilId, UUID termId);
 }
