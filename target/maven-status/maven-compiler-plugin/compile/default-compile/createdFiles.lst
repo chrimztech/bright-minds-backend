@@ -135,7 +135,6 @@ com\brightminds\school\repository\HealthRecordRepository.class
 com\brightminds\school\entity\Message$MessageBuilder.class
 com\brightminds\school\controller\CanteenController$SaleReq.class
 com\brightminds\school\entity\enums\InvoiceStatus.class
-com\brightminds\school\dto\ParentPortalDto$SubjectResult.class
 com\brightminds\school\controller\InventoryController$TxnRequest.class
 com\brightminds\school\controller\AdmissionController.class
 com\brightminds\school\entity\enums\DisciplineKind.class
@@ -182,7 +181,6 @@ com\brightminds\school\controller\InventoryController.class
 com\brightminds\school\controller\LibraryController.class
 com\brightminds\school\entity\enums\PupilStatus.class
 com\brightminds\school\controller\UserManagementController$UserDto.class
-com\brightminds\school\dto\ParentPortalDto$SubjectResult$SubjectResultBuilder.class
 com\brightminds\school\entity\Admission$AdmissionBuilder.class
 com\brightminds\school\controller\ProcurementController$SupplierReq.class
 com\brightminds\school\entity\enums\AppRole.class

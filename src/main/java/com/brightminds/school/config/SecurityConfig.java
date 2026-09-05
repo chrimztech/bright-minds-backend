@@ -57,6 +57,10 @@ public class SecurityConfig {
                         // authenticate against either — same narrow-allowlist reasoning as
                         // /public/inquiries above.
                         .requestMatchers(HttpMethod.POST, "/public/forgot-password", "/public/reset-password").permitAll()
+                        // Lenco calls this directly with no session of ours — signature verification
+                        // (LencoWebhookController) is what actually guards it, same narrow-allowlist
+                        // reasoning as the other /public/** POST routes above.
+                        .requestMatchers(HttpMethod.POST, "/public/webhooks/lenco").permitAll()
                         // Uploaded images (staff photos/signatures, etc.) are rendered via plain
                         // <img> tags — including inside printed documents — which never send an
                         // Authorization header, so reading them must not require a session.

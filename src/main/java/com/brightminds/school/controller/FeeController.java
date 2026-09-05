@@ -6,6 +6,7 @@ import com.brightminds.school.entity.enums.PaymentMethod;
 import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import com.brightminds.school.service.AuditService;
+import com.brightminds.school.service.InvoiceBalanceService;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -35,6 +36,7 @@ public class FeeController {
     private final TermRepository termRepo;
     private final SchoolClassRepository classRepo;
     private final AuditService audit;
+    private final InvoiceBalanceService invoiceBalanceService;
 
     // ─── Fee Items ────────────────────────────────────────────────────────────
 
@@ -250,7 +252,7 @@ public class FeeController {
                 .reference(req.getReference())
                 .status(PaymentStatus.CONFIRMED)
                 .build();
-        if (invoice != null) adjustInvoicePaid(invoice, payment.getAmount());
+        if (invoice != null) invoiceBalanceService.adjust(invoice, payment.getAmount());
         return paymentRepo.save(payment);
     }
 
@@ -270,7 +272,7 @@ public class FeeController {
         if (req.getReference() != null) payment.setReference(req.getReference());
 
         if (wasConfirmed && payment.getInvoice() != null && req.getAmount() != null) {
-            adjustInvoicePaid(payment.getInvoice(), payment.getAmount().subtract(oldAmount));
+            invoiceBalanceService.adjust(payment.getInvoice(), payment.getAmount().subtract(oldAmount));
         }
         audit.log("CORRECT_PAYMENT", "Payment", id.toString(),
                 "amount " + oldAmount + " -> " + payment.getAmount() + " (receipt " + payment.getReceiptNo() + ")");
@@ -286,7 +288,7 @@ public class FeeController {
                 "amount " + payment.getAmount() + ", receipt " + payment.getReceiptNo()
                         + (payment.getPupil() != null ? ", pupil " + payment.getPupil().getFullName() : ""));
         if (payment.getStatus() == PaymentStatus.CONFIRMED && payment.getInvoice() != null) {
-            adjustInvoicePaid(payment.getInvoice(), payment.getAmount().negate());
+            invoiceBalanceService.adjust(payment.getInvoice(), payment.getAmount().negate());
         }
         paymentRepo.deleteById(id);
     }
@@ -298,7 +300,7 @@ public class FeeController {
         if (payment.getStatus() != PaymentStatus.PENDING) {
             throw new IllegalArgumentException("Only pending payments can be confirmed");
         }
-        if (payment.getInvoice() != null) adjustInvoicePaid(payment.getInvoice(), payment.getAmount());
+        if (payment.getInvoice() != null) invoiceBalanceService.adjust(payment.getInvoice(), payment.getAmount());
         payment.setStatus(PaymentStatus.CONFIRMED);
         return paymentRepo.save(payment);
     }
@@ -332,20 +334,6 @@ public class FeeController {
                     .toList();
         }
         return result;
-    }
-
-    // Applies a signed delta to an invoice's paid total — positive to record a payment,
-    // negative to reverse one (editing or deleting a previously-confirmed payment) — and
-    // recomputes status from the resulting balance rather than assuming it only grows.
-    private void adjustInvoicePaid(Invoice invoice, BigDecimal delta) {
-        BigDecimal newPaid = invoice.getPaid().add(delta).max(BigDecimal.ZERO);
-        invoice.setPaid(newPaid);
-        InvoiceStatus status;
-        if (newPaid.signum() <= 0) status = InvoiceStatus.UNPAID;
-        else if (newPaid.compareTo(invoice.getTotal()) >= 0) status = InvoiceStatus.PAID;
-        else status = InvoiceStatus.PARTIAL;
-        invoice.setStatus(status);
-        invoiceRepo.save(invoice);
     }
 
     private String generateReceiptNo() {

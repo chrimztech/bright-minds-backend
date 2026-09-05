@@ -6,6 +6,7 @@ import com.brightminds.school.entity.enums.PaymentMethod;
 import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import com.brightminds.school.service.GuardianAccountService;
+import com.brightminds.school.service.LencoService;
 import com.brightminds.school.service.ParentPortalService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -36,6 +37,8 @@ public class GuardianController {
     private final MarkRepository markRepo;
     private final ParentPortalService portalService;
     private final GuardianAccountService accountService;
+    private final GatewayTransactionRepository gatewayRepo;
+    private final LencoService lencoService;
 
     @GetMapping
     @PreAuthorize("@perm.has('guardians:manage')")
@@ -116,6 +119,36 @@ public class GuardianController {
         return paymentRepo.findAllByOrderByPaidOnDesc().stream()
                 .filter(p -> pupilIds.contains(p.getPupil().getId()))
                 .toList();
+    }
+
+    // Parent self-service mobile money payment via Lenco — unlike submitPayment above, this
+    // never touches the invoice balance itself; LencoService.checkStatus is the only place a
+    // Payment gets created, once Lenco itself confirms the collection succeeded.
+    @PostMapping("/me/payments/lenco")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('PARENT')")
+    public GatewayTransaction payOnline(@AuthenticationPrincipal UserDetails principal, @RequestBody LencoPaymentRequest req) {
+        Guardian g = portalService.currentGuardian(principal);
+        if (g == null) throw new EntityNotFoundException("Guardian not found");
+        Invoice invoice = invoiceRepo.findById(req.getInvoiceId())
+                .orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
+        boolean ownsChild = gpRepo.findByGuardianId(g.getId()).stream()
+                .anyMatch(gp -> gp.getPupil().getId().equals(invoice.getPupil().getId()));
+        if (!ownsChild) throw new IllegalArgumentException("That invoice does not belong to your child");
+        return lencoService.initiate(invoice, g, req.getAmount(), req.getPhone(), req.getOperator());
+    }
+
+    @GetMapping("/me/payments/lenco/{reference}")
+    @PreAuthorize("hasRole('PARENT')")
+    public GatewayTransaction lencoPaymentStatus(@AuthenticationPrincipal UserDetails principal, @PathVariable String reference) {
+        Guardian g = portalService.currentGuardian(principal);
+        if (g == null) throw new EntityNotFoundException("Guardian not found");
+        GatewayTransaction tx = gatewayRepo.findByReference(reference)
+                .orElseThrow(() -> new EntityNotFoundException("Payment attempt not found"));
+        boolean ownsChild = gpRepo.findByGuardianId(g.getId()).stream()
+                .anyMatch(gp -> gp.getPupil().getId().equals(tx.getInvoice().getPupil().getId()));
+        if (!ownsChild) throw new IllegalArgumentException("That payment does not belong to your child");
+        return lencoService.checkStatus(reference);
     }
 
     @GetMapping("/me/attendance")
@@ -234,5 +267,12 @@ public class GuardianController {
         private PaymentMethod method;
         private LocalDate paidOn;
         private String reference;
+    }
+
+    @Data public static class LencoPaymentRequest {
+        private UUID invoiceId;
+        private BigDecimal amount;
+        private String phone;
+        private String operator;
     }
 }

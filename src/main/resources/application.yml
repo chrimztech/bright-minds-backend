@@ -8,7 +8,7 @@ spring:
     # this repo's history, which breaks every DB-dependent feature (including role updates)
     # the moment the backend can't connect at all. If your Postgres really does move to a
     # different port, update this deliberately rather than guessing.
-    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5433/bright_minds_db}
+    url: ${DB_URL:jdbc:postgresql://127.0.0.1:5432/bright_minds_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:11111111}
     driver-class-name: org.postgresql.Driver
@@ -81,6 +81,13 @@ app:
     # How many of the newest snapshots in that folder to keep — older ones are pruned after
     # each nightly run, since every snapshot bundles every uploaded file and these add up.
     retention: ${BACKUP_RETENTION:14}
+  lenco:
+    base-url: ${LENCO_BASE_URL:https://api.lenco.co/access/v2}
+    # Client-side card-encryption widget key — not needed for the mobile money flow currently
+    # implemented, kept here for a future card-payments addition.
+    public-key: ${LENCO_PUBLIC_KEY:}
+    secret-key: ${LENCO_SECRET_KEY:}
+    signature-key: ${LENCO_SIGNATURE_KEY:}
   uploads:
     dir: ${UPLOADS_DIR:./uploads}
     public-base-url: ${UPLOADS_PUBLIC_URL:/api/uploads}
