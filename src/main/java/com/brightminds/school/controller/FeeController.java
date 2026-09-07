@@ -7,6 +7,7 @@ import com.brightminds.school.entity.enums.PaymentStatus;
 import com.brightminds.school.repository.*;
 import com.brightminds.school.service.AuditService;
 import com.brightminds.school.service.InvoiceBalanceService;
+import com.brightminds.school.service.LencoService;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,6 +38,9 @@ public class FeeController {
     private final SchoolClassRepository classRepo;
     private final AuditService audit;
     private final InvoiceBalanceService invoiceBalanceService;
+    private final GuardianPupilRepository gpRepo;
+    private final GatewayTransactionRepository gatewayRepo;
+    private final LencoService lencoService;
 
     // ─── Fee Items ────────────────────────────────────────────────────────────
 
@@ -317,6 +321,30 @@ public class FeeController {
         return paymentRepo.save(payment);
     }
 
+    // Staff-initiated mobile money collection — e.g. a parent calls in and asks the office to
+    // charge their phone. Unlike the parent-portal version there's no guardian-session ownership
+    // check (staff already has fees:collect); the pupil's first linked guardian (preferring the
+    // one flagged primary) is attached to the resulting transaction purely for record-keeping —
+    // the phone number actually charged is whatever the caller types in, not necessarily theirs.
+    @PreAuthorize("@perm.has('fees:collect')")
+    @PostMapping("/invoices/{id}/pay-online")
+    @ResponseStatus(HttpStatus.CREATED)
+    public GatewayTransaction payOnline(@PathVariable UUID id, @RequestBody PayOnlineRequest req) {
+        Invoice invoice = invoiceRepo.findById(id).orElseThrow(() -> new EntityNotFoundException("Invoice not found"));
+        Guardian guardian = gpRepo.findByPupilId(invoice.getPupil().getId()).stream()
+                .sorted((a, b) -> Boolean.compare(b.isPrimary(), a.isPrimary()))
+                .map(GuardianPupil::getGuardian)
+                .findFirst()
+                .orElse(null);
+        return lencoService.initiate(invoice, guardian, req.getAmount(), req.getPhone(), req.getOperator());
+    }
+
+    @PreAuthorize("@perm.has('fees:collect')")
+    @GetMapping("/gateway-transactions/{reference}")
+    public GatewayTransaction gatewayTransactionStatus(@PathVariable String reference) {
+        return lencoService.checkStatus(reference);
+    }
+
     // Grade groups every stream sharing a class name (e.g. "Grade 1 A" + "Grade 1 B"),
     // while classId narrows to one specific class/stream.
     private <T> List<T> filterByClassAndGrade(List<T> rows, java.util.function.Function<T, Pupil> pupilOf, UUID classId, String grade) {
@@ -374,5 +402,11 @@ public class FeeController {
 
     @Data public static class RejectRequest {
         private String reason;
+    }
+
+    @Data public static class PayOnlineRequest {
+        private BigDecimal amount;
+        private String phone;
+        private String operator;
     }
 }
