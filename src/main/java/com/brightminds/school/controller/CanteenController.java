@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -110,6 +111,11 @@ public class CanteenController {
         scopeService.assertInScope(scopeService.restrictedClassIds(auth), pupil.getSchoolClass() != null ? pupil.getSchoolClass().getId() : null);
         var plan = planRepo.findById(req.getPlanId()).orElseThrow(() -> new EntityNotFoundException("Plan not found"));
         var sub = CanteenSubscription.builder().pupil(pupil).plan(plan).status("ACTIVE").build();
+        // A subscription is a pre-paid block of canteen meals covering a fixed period (a week, a
+        // month, or a term) — without an end date it looked open-ended forever, so the caller
+        // (which knows whether this was a weekly/monthly/termly payment) supplies both bounds.
+        if (req.getStartDate() != null) sub.setStartDate(req.getStartDate());
+        if (req.getEndDate() != null) sub.setEndDate(req.getEndDate());
         if (req.getTermId() != null) termRepo.findById(req.getTermId()).ifPresent(sub::setTerm);
         return subRepo.save(sub);
     }
@@ -129,5 +135,5 @@ public class CanteenController {
     }
     @Data public static class PlanReq { private String name; private String description; private int mealsPerDay = 1; private BigDecimal pricePerTerm; }
     @Data public static class SaleReq { private UUID itemId; private String itemName; private UUID pupilId; private int quantity = 1; private BigDecimal unitPrice; private String paymentMethod; private String notes; }
-    @Data public static class SubReq { private UUID pupilId; private UUID planId; private UUID termId; }
+    @Data public static class SubReq { private UUID pupilId; private UUID planId; private UUID termId; private LocalDate startDate; private LocalDate endDate; }
 }
