@@ -21,8 +21,8 @@ import java.nio.file.Paths;
 import java.util.Set;
 import java.util.UUID;
 
-// Local-disk file storage for images used across the app (staff photos/signatures, etc.) —
-// there's no cloud storage account configured, so uploads land in a directory on this
+// Local-disk file storage used across the app (staff photos/signatures, homework attachments,
+// etc.) — there's no cloud storage account configured, so uploads land in a directory on this
 // server and are served back from GET /uploads/{filename}, which is deliberately public
 // (see SecurityConfig) since <img> tags — including inside printed documents — never send
 // an Authorization header.
@@ -31,7 +31,15 @@ import java.util.UUID;
 @Tag(name = "File Uploads")
 public class FileUploadController {
 
-    private static final Set<String> ALLOWED_TYPES = Set.of("image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml");
+    // Images (staff/pupil photos, signatures) plus common homework-attachment document types —
+    // this endpoint was image-only, which silently rejected every PDF/Word worksheet a teacher
+    // tried to attach to homework.
+    private static final Set<String> ALLOWED_TYPES = Set.of(
+            "image/png", "image/jpeg", "image/gif", "image/webp", "image/svg+xml",
+            "application/pdf", "text/plain",
+            "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
     @Value("${app.uploads.dir}")
     private String uploadsDir;
@@ -43,7 +51,7 @@ public class FileUploadController {
         if (file.isEmpty()) throw new IllegalArgumentException("File is empty");
         String contentType = file.getContentType();
         if (contentType == null || !ALLOWED_TYPES.contains(contentType.toLowerCase())) {
-            throw new IllegalArgumentException("Only image files (PNG, JPEG, GIF, WEBP, SVG) are allowed");
+            throw new IllegalArgumentException("Only images, PDFs, Word/Excel/PowerPoint documents or plain text files are allowed");
         }
         String ext = switch (contentType.toLowerCase()) {
             case "image/png" -> ".png";
@@ -51,6 +59,14 @@ public class FileUploadController {
             case "image/gif" -> ".gif";
             case "image/webp" -> ".webp";
             case "image/svg+xml" -> ".svg";
+            case "application/pdf" -> ".pdf";
+            case "text/plain" -> ".txt";
+            case "application/msword" -> ".doc";
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> ".docx";
+            case "application/vnd.ms-powerpoint" -> ".ppt";
+            case "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> ".pptx";
+            case "application/vnd.ms-excel" -> ".xls";
+            case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> ".xlsx";
             default -> "";
         };
         String filename = UUID.randomUUID() + ext;
