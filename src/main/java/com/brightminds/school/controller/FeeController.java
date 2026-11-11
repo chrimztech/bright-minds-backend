@@ -157,7 +157,12 @@ public class FeeController {
                     .pupil(original.getPupil())
                     .term(original.getTerm())
                     .feeItem(lateFeeItem)
-                    .total(LATE_FEE_AMOUNT)
+                    // Read the FeeItem's own (editable) amount rather than the hardcoded
+                    // constant below — the constant only seeds the FeeItem the first time it's
+                    // ever created. Using it here meant an admin editing "Administrative Late
+                    // Fee" under Fee Items had no effect on future late fees whatsoever; they'd
+                    // always come out at whatever LATE_FEE_AMOUNT happened to be in the jar.
+                    .total(lateFeeItem.getAmount())
                     .description("Administrative late payment fee — overdue invoice " + original.getInvoiceNo())
                     .dueDate(LocalDate.now())
                     .build();
@@ -168,7 +173,10 @@ public class FeeController {
         return created;
     }
 
-    private static final BigDecimal LATE_FEE_AMOUNT = BigDecimal.valueOf(35);
+    // Only used to seed the "Administrative Late Fee" FeeItem the first time apply-late-fees
+    // ever runs — after that, its actual amount (editable under Fees → Fee items) is what's
+    // charged; see the .total(lateFeeItem.getAmount()) above.
+    private static final BigDecimal LATE_FEE_AMOUNT = BigDecimal.valueOf(30);
 
     private String nextInvoiceNo() {
         return "INV-" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyMMdd"))
